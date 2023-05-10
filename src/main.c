@@ -25,41 +25,11 @@ static K_SEM_DEFINE(lte_connected, 0, 1);
 
 LOG_MODULE_REGISTER(Lesson4_Exercise1, LOG_LEVEL_INF);
 
-#define WIND_SPEED_NODE DT_ALIAS(windspeed0)
-static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
 
 uint8_t msg[] = "0 hello test";
 uint8_t cnt = 0;
 
-volatile int frequency = 0;
-volatile int64_t lasttime = 0;
-volatile bool toggle = false;
-#define WIND_SCALE (102.0/60.0)
 
-void sample_function(struct k_work *work)
-{
-	float f = frequency / 6.0 * WIND_SCALE;
-	int speed = (int) f;
-	LOG_INF("Wind Speed %d ...", speed);
-	frequency = 0;
-}
-
-K_TIMER_DEFINE(sample_timer, sample_function, NULL);
-
-void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
-{
-	int64_t time = k_uptime_get();
-	if ((time - lasttime) > 10)
-	{
-		frequency++;
-		toggle = !toggle;
-	}
-	lasttime = time;
-
-	dk_set_led_on(DK_LED3);
-}
-
-static struct gpio_callback windspeed_cb_data;
 
 static void lte_handler(const struct lte_lc_evt *const evt)
 {
@@ -132,25 +102,6 @@ void main(void)
 		LOG_ERR("Failed to initialize the LED library");
 	}
 
-	if (!device_is_ready(windspeed.port))
-	{
-		return;
-	}
-
-	err = gpio_pin_configure_dt(&windspeed, GPIO_INPUT | GPIO_PULL_UP);
-	if (err < 0)
-	{
-		return;
-	}
-	/* STEP 3 - Configure the interrupt on the button's pin */
-	err = gpio_pin_interrupt_configure_dt(&windspeed, GPIO_INT_EDGE_TO_ACTIVE);
-
-	/* STEP 6 - Initialize the static struct gpio_callback variable   */
-	gpio_init_callback(&windspeed_cb_data, windspeed_handler, BIT(windspeed.pin));
-
-	/* STEP 7 - Add the callback function by calling gpio_add_callback()   */
-	gpio_add_callback(windspeed.port, &windspeed_cb_data);
-
 	modem_configure();
 
 	if (dk_buttons_init(button_handler) != 0)
@@ -165,7 +116,7 @@ void main(void)
 		return;
 	}
 
-	k_timer_start(&sample_timer, K_SECONDS(6), K_SECONDS(6));
+	init_wind_sensor();
 
 do_connect:
 	if (connect_attempt++ > 0)
