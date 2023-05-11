@@ -16,6 +16,8 @@
 #include <zephyr/net/mqtt.h>
 
 #include "mqtt_connection.h"
+#include "wind_sensor.h"
+
 /* The mqtt client struct */
 static struct mqtt_client client;
 /* File descriptor */
@@ -29,6 +31,16 @@ LOG_MODULE_REGISTER(Lesson4_Exercise1, LOG_LEVEL_INF);
 uint8_t msg[] = "0 hello test";
 uint8_t cnt = 0;
 
+
+
+void wind_check(struct ktimer *work)
+{
+		dk_set_led_on(DK_LED1);
+		dk_set_led_off(DK_LED2);
+		begin_wind_sample();
+}
+
+K_TIMER_DEFINE(wind_check_timer, wind_check, NULL);
 
 
 static void lte_handler(const struct lte_lc_evt *const evt)
@@ -117,6 +129,7 @@ void main(void)
 	}
 
 	init_wind_sensor();
+	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(15));
 
 do_connect:
 	if (connect_attempt++ > 0)

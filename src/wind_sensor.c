@@ -11,25 +11,24 @@ LOG_MODULE_DECLARE(Lesson4_Exercise1);
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
 static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
 
-volatile int frequency = 0;
-volatile int64_t lasttime = 0;
-volatile bool toggle = false;
 #define WIND_SCALE (102.0 / 60.0)
 
-void sample_function(struct k_work *work)
+static volatile int frequency = 0;
+static volatile int64_t lasttime = 0;
+static volatile bool toggle = false;
+static int speed;
+
+
+void frequency_counter(struct k_timer *work)
 {
 	float f = frequency / 6.0 * WIND_SCALE;
-	int speed = (int)f;
+	speed = (int)f;
 	LOG_INF("Windspeed %d ...", speed);
 	frequency = 0;
-}
+	dk_set_led_on(DK_LED2);
+	dk_set_led_off(DK_LED1);}
 
-K_TIMER_DEFINE(sample_timer, sample_function, NULL);
-
-void ws_calc()
-{
-
-}
+K_TIMER_DEFINE(frequency_timer, frequency_counter, NULL);
 
 void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
@@ -40,13 +39,15 @@ void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint3
 		toggle = !toggle;
 	}
 	lasttime = time;
-
-	dk_set_led_on(DK_LED1);
-	dk_set_led_off(DK_LED2);
 }
 
 static struct gpio_callback windspeed_cb_data;
 
+void begin_wind_sample()
+{
+	frequency = 0;
+	k_timer_start(&frequency_timer, K_SECONDS(6), K_FOREVER);
+}
 
 int init_wind_sensor()
 {
@@ -71,6 +72,5 @@ int init_wind_sensor()
 	gpio_add_callback(windspeed.port, &windspeed_cb_data);
 
 
-	k_timer_start(&sample_timer, K_SECONDS(6), K_SECONDS(6));
 	return 0;
 }
