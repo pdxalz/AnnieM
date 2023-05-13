@@ -35,9 +35,9 @@ uint8_t cnt = 0;
 
 void wind_check(struct ktimer *work)
 {
-		dk_set_led_on(DK_LED1);
-		dk_set_led_off(DK_LED2);
-		begin_wind_sample();
+	dk_set_led_on(DK_LED1);
+	dk_set_led_off(DK_LED2);
+	begin_wind_sample();
 }
 
 K_TIMER_DEFINE(wind_check_timer, wind_check, NULL);
@@ -128,7 +128,7 @@ void main(void)
 		return;
 	}
 
-	init_wind_sensor();
+	init_wind_sensor(&client);
 	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(15));
 
 do_connect:

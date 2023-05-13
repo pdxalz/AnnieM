@@ -6,6 +6,11 @@
 #include <modem/lte_lc.h>
 #include <zephyr/drivers/gpio.h>
 
+#include <zephyr/net/mqtt.h>
+
+#include "mqtt_connection.h"
+#include "wind_sensor.h"
+
 LOG_MODULE_DECLARE(Lesson4_Exercise1);
 
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
@@ -17,7 +22,24 @@ static volatile int frequency = 0;
 static volatile int64_t lasttime = 0;
 static volatile bool toggle = false;
 static int speed;
+uint8_t wmsg[] = "0 wind speed";
 
+/* The mqtt client struct */
+static struct mqtt_client *_pclient;
+
+static void repeating_timer_callback(struct k_timer *timer_id)
+{
+	wmsg[0] = '0' + speed;
+	int err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+						   wmsg, sizeof(wmsg) - 1);
+	if (err)
+	{
+		LOG_INF("Failed to send message, %d", err);
+		return;
+	}
+}
+
+K_WORK_DEFINE(repeating_timer_work, repeating_timer_callback);
 
 void frequency_counter(struct k_timer *work)
 {
@@ -26,7 +48,12 @@ void frequency_counter(struct k_timer *work)
 	LOG_INF("Windspeed %d ...", speed);
 	frequency = 0;
 	dk_set_led_on(DK_LED2);
-	dk_set_led_off(DK_LED1);}
+	dk_set_led_off(DK_LED1);
+	LOG_INF("speed: , %d", speed);
+
+	LOG_INF("speed complete");
+	k_work_submit(&repeating_timer_work);
+}
 
 K_TIMER_DEFINE(frequency_timer, frequency_counter, NULL);
 
@@ -49,8 +76,9 @@ void begin_wind_sample()
 	k_timer_start(&frequency_timer, K_SECONDS(6), K_FOREVER);
 }
 
-int init_wind_sensor()
+int init_wind_sensor(struct mqtt_client *c)
 {
+	_pclient = c;
 	int err;
 	if (!device_is_ready(windspeed.port))
 	{
@@ -71,6 +99,10 @@ int init_wind_sensor()
 	/* STEP 7 - Add the callback function by calling gpio_add_callback()   */
 	gpio_add_callback(windspeed.port, &windspeed_cb_data);
 
-
 	return 0;
+}
+
+int get_windspeed()
+{
+	return speed;
 }

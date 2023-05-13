@@ -2,7 +2,19 @@
 	"folders": [
 		{
 			"path": ".."
+		},
+		{
+			"name": "nrf_cloud_mqtt_multi_service",
+			"path": "../../../nrf_cloud_mqtt_multi_service"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"mqtt_connection.h": "c",
+			"wind_sensor.h": "c",
+			"gpio.h": "c",
+			"dk_buttons_and_leds.h": "c"
+		},
+		"nrf-connect.toolchain.path": "${nrf-connect.toolchain:2.3.0}"
+	}
 }
