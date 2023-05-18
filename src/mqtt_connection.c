@@ -95,21 +95,19 @@ static void data_print(uint8_t *prefix, uint8_t *data, size_t len)
  */
 /* STEP 7.1 - Define the function data_publish() to publish data */
 int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
-				 uint8_t *data, size_t len)
+				 uint8_t *data, size_t len, uint8_t * topic, uint8_t retain)
 {
 	struct mqtt_publish_param param;
 	param.message.topic.qos = qos;
-	param.message.topic.topic.utf8 = CONFIG_MQTT_PUB_TOPIC;
-	param.message.topic.topic.size = strlen(CONFIG_MQTT_PUB_TOPIC);
+	param.message.topic.topic.utf8 = topic;//CONFIG_MQTT_PUB_TOPIC;
+	param.message.topic.topic.size = strlen(topic);
 	param.message.payload.data = data;
 	param.message.payload.len = len;
 	param.message_id = sys_rand32_get();
 	param.dup_flag = 0;
-	param.retain_flag = 0;
+	param.retain_flag = retain;
 	data_print("Publishing: ", data, len);
-	LOG_INF("to topic: %s len: %u",
-			CONFIG_MQTT_PUB_TOPIC,
-			(unsigned int)strlen(CONFIG_MQTT_PUB_TOPIC));
+	LOG_INF("to topic: %s len: %u",	topic, (unsigned int)strlen(topic));
 	return mqtt_publish(c, &param);
 }
 

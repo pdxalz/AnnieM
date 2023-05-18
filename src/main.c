@@ -93,7 +93,7 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 			// int err = data_publish(&client, MQTT_QOS_1_AT_LEAST_ONCE,
 			// 					   CONFIG_BUTTON_EVENT_PUBLISH_MSG, sizeof(CONFIG_BUTTON_EVENT_PUBLISH_MSG) - 1);
 			int err = data_publish(&client, MQTT_QOS_1_AT_LEAST_ONCE,
-								   msg, sizeof(msg) - 1);
+								   msg, sizeof(msg) - 1, CONFIG_MQTT_PUB_TOPIC, 0);
 			if (err)
 			{
 				LOG_INF("Failed to send message, %d", err);
