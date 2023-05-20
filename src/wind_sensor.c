@@ -6,6 +6,7 @@
 #include <modem/lte_lc.h>
 #include <zephyr/drivers/gpio.h>
 #include <date_time.h>
+#include "power.h"
 
 #include <zephyr/net/mqtt.h>
 
@@ -23,7 +24,7 @@ static volatile int frequency = 0;
 static volatile int64_t lasttime = 0;
 static volatile bool toggle = false;
 static int speed;
-uint8_t wmsg[120];
+uint8_t wmsg[200];
 uint8_t tmsg[80];
 uint8_t topic[80];
 
@@ -34,13 +35,13 @@ struct w_sensor
 	uint8_t direction;
 } wind_sensor[12];
 
-int current_time = 60 * 10 + 45; // 10:45 AM
-
 /* The mqtt client struct */
 static struct mqtt_client *_pclient;
 
-static void build_array_string(uint8_t *buf)
+static void build_array_string(uint8_t *buf, struct tm * t)
 {
+
+	buf += sprintf(buf, "{\"time\":[ %d %d %d], ", t->tm_mday, t->tm_hour, t->tm_min);
 	buf += sprintf(buf, "{\"wind\":[");
 
 	for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
@@ -53,20 +54,13 @@ static void build_array_string(uint8_t *buf)
 
 static void repeating_timer_callback(struct k_timer *timer_id)
 {
-	// int64_t timestamp;
-	// struct tm *tmp;
+	time_t temp;
+	struct tm *timeptr;
+	temp = time(NULL);
+	timeptr = localtime(&temp);
 
-	// /* Acquire timestamp */
-	// if (date_time_now(&timestamp))
-	// {
-	// 	LOG_ERR("Failed to create timestamp for data message "
-	// 			"with appid %s",
-	// 			timer_id);
-	// 	return;
-	// }
-	current_time = (current_time + 5) % (60 * 24);
-	int hour = current_time / 60;
-	int minute = (current_time % 60);
+	int hour = timeptr->tm_hour;
+	int minute = timeptr->tm_min;
 
 	if (minute == 0)
 	{
@@ -80,7 +74,7 @@ static void repeating_timer_callback(struct k_timer *timer_id)
 	wind_sensor[minute / 5].speed = speed;
 	wind_sensor[minute / 5].direction = 1;
 
-	build_array_string(wmsg);
+	build_array_string(wmsg, timeptr);
 	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);
 
 	sprintf(topic, "zimbuktu/wind%02d", hour);
@@ -103,6 +97,7 @@ void frequency_counter(struct k_timer *work)
 	frequency = 0;
 	dk_set_led_on(DK_LED2);
 	dk_set_led_off(DK_LED1);
+	set_boost(false);
 
 	k_work_submit(&repeating_timer_work);
 }

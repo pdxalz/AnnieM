@@ -17,10 +17,24 @@
             gpios = <&gpio0 10 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
         };
     };
+
+	power_enable {
+		compatible = "gpio-leds";
+		fanenable: nmos_2 {
+			gpios = <&gpio0 15 0>;
+			label = "fan power enable";
+		};
+		boostenable: nmos_3 {
+			gpios = <&gpio0 16 0>;
+			label = "12v boost enable";
+		};
+
+	};
     aliases {
 		windspeed0 = &windspeed0;
+		fanenable = &fanenable;
+		boostenable = &boostenable;
     };
-
 	nrf52840_reset: gpio-reset {
 		status = "disabled";
 	};
@@ -31,16 +45,14 @@
 	pwm2_default: pwm2_default {
 		group1 {
 			psels = <NRF_PSEL(PWM_OUT0, 0, 13)>,
-				<NRF_PSEL(PWM_OUT1, 0, 14)>,
-				<NRF_PSEL(PWM_OUT2, 0, 15)>;
+				<NRF_PSEL(PWM_OUT1, 0, 14)>;
 		};
 	};
 
 	pwm2_sleep: pwm2_sleep {
 		group1 {
 			psels = <NRF_PSEL(PWM_OUT0, 0, 13)>,
-				<NRF_PSEL(PWM_OUT1, 0, 14)>,
-				<NRF_PSEL(PWM_OUT2, 0, 15)>;
+				<NRF_PSEL(PWM_OUT1, 0, 14)>;
 
 			low-power-enable;
 		};

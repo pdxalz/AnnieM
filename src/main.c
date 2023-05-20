@@ -11,12 +11,14 @@
 #include <dk_buttons_and_leds.h>
 #include <modem/lte_lc.h>
 #include <zephyr/drivers/gpio.h>
+#include <date_time.h>
 
 /* STEP 2.3 - Include the header file for the MQTT Library*/
 #include <zephyr/net/mqtt.h>
 
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
+#include "power.h"
 
 /* The mqtt client struct */
 static struct mqtt_client client;
@@ -27,21 +29,43 @@ static K_SEM_DEFINE(lte_connected, 0, 1);
 
 LOG_MODULE_REGISTER(Lesson4_Exercise1, LOG_LEVEL_INF);
 
-
 uint8_t msg[] = "0 hello test";
 uint8_t cnt = 0;
-
-
+uint8_t buf[100];
 
 void wind_check(struct ktimer *work)
 {
+	int rc;
+	time_t temp;
+	struct tm *timeptr;
+
+	// if (0 != date_time_now(&temp))
+	// {
+	// 	LOG_INF("no time");
+	// }
+	// else
+	{
+		temp = time(NULL);
+		timeptr = localtime(&temp);
+		rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
+		LOG_INF("time: %s  chars: %d", buf, rc);
+	}
+
+	if (sleepy_time())
+	{
+		dk_set_led_on(DK_LED3);
+		dk_set_led_off(DK_LED2);
+		dk_set_led_off(DK_LED1);
+		return;
+	}
 	dk_set_led_on(DK_LED1);
 	dk_set_led_off(DK_LED2);
+
+	set_boost(true);
 	begin_wind_sample();
 }
 
 K_TIMER_DEFINE(wind_check_timer, wind_check, NULL);
-
 
 static void lte_handler(const struct lte_lc_evt *const evt)
 {
@@ -113,6 +137,10 @@ void main(void)
 	{
 		LOG_ERR("Failed to initialize the LED library");
 	}
+	if (init_power() != 0)
+	{
+		LOG_ERR("Failed to initialize the power control");
+	}
 
 	modem_configure();
 
@@ -127,9 +155,12 @@ void main(void)
 		LOG_ERR("Failed to initialize MQTT client: %d", err);
 		return;
 	}
+	setenv("TZ", "PST8PDT", 1);
+	tzset();
 
 	init_wind_sensor(&client);
-	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(15));
+	k_timer_start(&wind_check_timer, K_MINUTES(5), K_MINUTES(5));
+	// k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(15));
 
 do_connect:
 	if (connect_attempt++ > 0)

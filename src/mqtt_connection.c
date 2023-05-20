@@ -14,11 +14,21 @@
 static uint8_t rx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
 static uint8_t tx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
 static uint8_t payload_buf[CONFIG_MQTT_PAYLOAD_BUFFER_SIZE];
+static bool sleep_time = false;
 
 /* MQTT Broker details. */
 static struct sockaddr_storage broker;
 
 LOG_MODULE_DECLARE(Lesson4_Exercise1);
+
+#define SLEEPY_TIME "sleep"
+#define WAKEY_TIME "wake"
+
+bool sleepy_time()
+{
+	return sleep_time;
+
+}
 
 /**@brief Function to get the payload of recived data.
  */
@@ -166,6 +176,21 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 				{
 					dk_set_led_off(LED_CONTROL_OVER_MQTT);
 				}
+				else if (strncmp(payload_buf, SLEEPY_TIME, sizeof(SLEEPY_TIME) - 1) == 0)
+				{
+					dk_set_led_off(0);
+					dk_set_led_off(1);
+					dk_set_led_on(2);
+					sleep_time = true;
+				}
+				else if (strncmp(payload_buf, WAKEY_TIME, sizeof(WAKEY_TIME) - 1) == 0)
+				{
+					dk_set_led_off(2);
+					dk_set_led_on(1);
+					dk_set_led_on(0);
+					sleep_time = false;
+				}
+
 			}
 			/* STEP 6.3 - On failed extraction of data */
 			// On failed extraction of data - Payload buffer is smaller than the recived data . Increase

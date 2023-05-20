@@ -10,6 +10,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(cellular_fundamentals)
 
 # NORDIC SDK APP START
+target_sources(app PRIVATE src/power.c)
 target_sources(app PRIVATE src/wind_sensor.c)
 target_sources(app PRIVATE src/mqtt_connection.c)
 target_sources(app PRIVATE src/main.c)
