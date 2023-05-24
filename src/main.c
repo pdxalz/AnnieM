@@ -51,7 +51,7 @@ void wind_check(struct ktimer *work)
 		LOG_INF("time: %s  chars: %d", buf, rc);
 	}
 
-	if (sleepy_time())
+	if (sleepy_mode())
 	{
 		dk_set_led_on(DK_LED3);
 		dk_set_led_off(DK_LED2);
@@ -108,6 +108,7 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 {
 	switch (has_changed)
 	{
+#if 0
 	case DK_BTN1_MSK:
 		/* STEP 7.2 - When button 1 is pressed, call data_publish() to publish a message */
 		if (button_state & DK_BTN1_MSK)
@@ -125,6 +126,7 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 			}
 		}
 		break;
+#endif
 	}
 }
 
@@ -159,8 +161,8 @@ void main(void)
 	tzset();
 
 	init_wind_sensor(&client);
-	k_timer_start(&wind_check_timer, K_MINUTES(5), K_MINUTES(5));
-	// k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(15));
+//	k_timer_start(&wind_check_timer, K_SECONDS(get_sample_time()), K_SECONDS(get_sample_time()));
+	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60*5));
 
 do_connect:
 	if (connect_attempt++ > 0)

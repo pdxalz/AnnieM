@@ -17,6 +17,7 @@ int fds_init(struct mqtt_client *c, struct pollfd *fds);
 int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 	uint8_t *data, size_t len, uint8_t * topic, uint8_t retain);
 
-bool sleepy_time();
+int get_sample_time();
+bool sleepy_mode();
 
 #endif /* _CONNECTION_H_ */

@@ -24,6 +24,8 @@ static volatile int frequency = 0;
 static volatile int64_t lasttime = 0;
 static volatile bool toggle = false;
 static int speed;
+static bool broker_cleared = false;
+
 uint8_t wmsg[200];
 uint8_t tmsg[80];
 uint8_t topic[80];
@@ -38,10 +40,10 @@ struct w_sensor
 /* The mqtt client struct */
 static struct mqtt_client *_pclient;
 
-static void build_array_string(uint8_t *buf, struct tm * t)
+static void build_array_string(uint8_t *buf, struct tm *t)
 {
 
-	buf += sprintf(buf, "{\"time\":[ %d %d %d], ", t->tm_mday, t->tm_hour, t->tm_min);
+	buf += sprintf(buf, "{\"time\":\"%04d-%02d-%02dT%02d:%02d:%02d.000Z\", ", t->tm_year, t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
 	buf += sprintf(buf, "{\"wind\":[");
 
 	for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
@@ -52,6 +54,26 @@ static void build_array_string(uint8_t *buf, struct tm * t)
 	sprintf(buf, "]}");
 }
 
+static void clear_broker_history()
+{
+	// clear the broker data first time after power up
+	if (!broker_cleared)
+	{
+		broker_cleared = true;
+		for (int i = 0; i < 24; ++i)
+		{
+			sprintf(topic, "zimbuktu/wind/%02d", i);
+			int err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+								   "", 0, topic, 1);
+			if (err)
+			{
+				LOG_INF("Failed to send broker clear message, %d", err);
+				return;
+			}
+		}
+	}
+}
+
 static void repeating_timer_callback(struct k_timer *timer_id)
 {
 	time_t temp;
@@ -59,10 +81,12 @@ static void repeating_timer_callback(struct k_timer *timer_id)
 	temp = time(NULL);
 	timeptr = localtime(&temp);
 
+	clear_broker_history();
+
 	int hour = timeptr->tm_hour;
 	int minute = timeptr->tm_min;
 
-	if (minute == 0)
+	if (minute < 60/SAMPLES_PER_HOUR)
 	{
 		for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
 		{
@@ -77,7 +101,7 @@ static void repeating_timer_callback(struct k_timer *timer_id)
 	build_array_string(wmsg, timeptr);
 	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);
 
-	sprintf(topic, "zimbuktu/wind%02d", hour);
+	sprintf(topic, "zimbuktu/wind/%02d", hour);
 	int err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
 						   wmsg, strlen(wmsg) - 1, topic, 1);
 	if (err)

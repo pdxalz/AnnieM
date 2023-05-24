@@ -10,24 +10,34 @@
 #include <dk_buttons_and_leds.h>
 #include "mqtt_connection.h"
 
+//#define DEFAULT_SAMPLE_TIME (15) // todo remove
+#define DEFAULT_SAMPLE_TIME (5 * 60) // 5 minutes 
+#define FAST_SAMPLE_TIME (15) // 15 sec
 /* Buffers for MQTT client. */
 static uint8_t rx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
 static uint8_t tx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
 static uint8_t payload_buf[CONFIG_MQTT_PAYLOAD_BUFFER_SIZE];
-static bool sleep_time = false;
+static bool sleep_mode = false;
+static int sample_time = DEFAULT_SAMPLE_TIME;
 
 /* MQTT Broker details. */
 static struct sockaddr_storage broker;
 
 LOG_MODULE_DECLARE(Lesson4_Exercise1);
 
-#define SLEEPY_TIME "sleep"
-#define WAKEY_TIME "wake"
+#define SLEEPY_MODE "sleep"
+#define WAKEY_MODE "wake"
+#define SAMPLE_FAST "fast"
+#define SAMPLE_SLOW "slow"
 
-bool sleepy_time()
+bool sleepy_mode()
 {
-	return sleep_time;
+	return sleep_mode;
+}
 
+int get_sample_time()
+{
+	return sample_time;
 }
 
 /**@brief Function to get the payload of recived data.
@@ -105,11 +115,11 @@ static void data_print(uint8_t *prefix, uint8_t *data, size_t len)
  */
 /* STEP 7.1 - Define the function data_publish() to publish data */
 int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
-				 uint8_t *data, size_t len, uint8_t * topic, uint8_t retain)
+				 uint8_t *data, size_t len, uint8_t *topic, uint8_t retain)
 {
 	struct mqtt_publish_param param;
 	param.message.topic.qos = qos;
-	param.message.topic.topic.utf8 = topic;//CONFIG_MQTT_PUB_TOPIC;
+	param.message.topic.topic.utf8 = topic; // CONFIG_MQTT_PUB_TOPIC;
 	param.message.topic.topic.size = strlen(topic);
 	param.message.payload.data = data;
 	param.message.payload.len = len;
@@ -117,7 +127,7 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 	param.dup_flag = 0;
 	param.retain_flag = retain;
 	data_print("Publishing: ", data, len);
-	LOG_INF("to topic: %s len: %u",	topic, (unsigned int)strlen(topic));
+	LOG_INF("to topic: %s len: %u", topic, (unsigned int)strlen(topic));
 	return mqtt_publish(c, &param);
 }
 
@@ -131,7 +141,6 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 	switch (evt->type)
 	{
 	case MQTT_EVT_CONNACK:
-		/* STEP 5 - Subscribe to the topic CONFIG_MQTT_SUB_TOPIC when we have a successful connection */
 		if (evt->result != 0)
 		{
 			LOG_ERR("MQTT connect failed: %d", evt->result);
@@ -176,21 +185,34 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 				{
 					dk_set_led_off(LED_CONTROL_OVER_MQTT);
 				}
-				else if (strncmp(payload_buf, SLEEPY_TIME, sizeof(SLEEPY_TIME) - 1) == 0)
+				else if (strncmp(payload_buf, SLEEPY_MODE, sizeof(SLEEPY_MODE) - 1) == 0)
 				{
 					dk_set_led_off(0);
 					dk_set_led_off(1);
 					dk_set_led_on(2);
-					sleep_time = true;
+					sleep_mode = true;
 				}
-				else if (strncmp(payload_buf, WAKEY_TIME, sizeof(WAKEY_TIME) - 1) == 0)
+				else if (strncmp(payload_buf, WAKEY_MODE, sizeof(WAKEY_MODE) - 1) == 0)
 				{
 					dk_set_led_off(2);
 					dk_set_led_on(1);
 					dk_set_led_on(0);
-					sleep_time = false;
+					sleep_mode = false;
 				}
-
+				else if (strncmp(payload_buf, SAMPLE_FAST, sizeof(SAMPLE_FAST) - 1) == 0)
+				{
+					dk_set_led_on(2);
+					dk_set_led_on(1);
+					dk_set_led_on(0);
+					sample_time = FAST_SAMPLE_TIME;
+				}
+				else if (strncmp(payload_buf, SAMPLE_SLOW, sizeof(SAMPLE_SLOW) - 1) == 0)
+				{
+					dk_set_led_off(2);
+					dk_set_led_off(1);
+					dk_set_led_off(0);
+					sample_time = DEFAULT_SAMPLE_TIME;
+				}
 			}
 			/* STEP 6.3 - On failed extraction of data */
 			// On failed extraction of data - Payload buffer is smaller than the recived data . Increase

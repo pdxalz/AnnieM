@@ -54,5 +54,6 @@ void toggle_boost()
 
 void set_boost(bool enable)
 {
+//	gpio_pin_set_dt(&boost, 1);
 	gpio_pin_set_dt(&boost, enable ?  1 : 0);
 }
