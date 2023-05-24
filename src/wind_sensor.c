@@ -74,19 +74,19 @@ static void clear_broker_history()
 	}
 }
 
-static void repeating_timer_callback(struct k_timer *timer_id)
+static void speed_calc_callback(struct k_work *timer_id)
 {
-	time_t temp;
-	struct tm *timeptr;
-	temp = time(NULL);
-	timeptr = localtime(&temp);
+	time_t now;
+	now = time(NULL);
+	struct tm tm;
+	localtime_r(&now, &tm);
 
 	clear_broker_history();
 
-	int hour = timeptr->tm_hour;
-	int minute = timeptr->tm_min;
+	int hour = tm.tm_hour;
+	int minute = tm.tm_min;
 
-	if (minute < 60/SAMPLES_PER_HOUR)
+	if (minute < 60 / SAMPLES_PER_HOUR)
 	{
 		for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
 		{
@@ -98,7 +98,7 @@ static void repeating_timer_callback(struct k_timer *timer_id)
 	wind_sensor[minute / 5].speed = speed;
 	wind_sensor[minute / 5].direction = 1;
 
-	build_array_string(wmsg, timeptr);
+	build_array_string(wmsg, &tm);
 	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);
 
 	sprintf(topic, "zimbuktu/wind/%02d", hour);
@@ -111,7 +111,7 @@ static void repeating_timer_callback(struct k_timer *timer_id)
 	}
 }
 
-K_WORK_DEFINE(repeating_timer_work, repeating_timer_callback);
+K_WORK_DEFINE(repeating_timer_work, speed_calc_callback);
 
 void frequency_counter(struct k_timer *work)
 {

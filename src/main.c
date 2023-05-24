@@ -6,12 +6,17 @@
 
 #include <stdio.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
 #include <zephyr/net/socket.h>
-#include <zephyr/logging/log.h>
 #include <dk_buttons_and_leds.h>
 #include <modem/lte_lc.h>
 #include <zephyr/drivers/gpio.h>
 #include <date_time.h>
+#include <soc.h>
+#include <zephyr/drivers/kscan.h>
+
+#define LOG_LEVEL LOG_LEVEL_DBG
+#include <zephyr/logging/log.h>
 
 /* STEP 2.3 - Include the header file for the MQTT Library*/
 #include <zephyr/net/mqtt.h>
@@ -19,6 +24,8 @@
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
 #include "power.h"
+
+extern int setenv(const char *name, const char *value, int overwrite);
 
 /* The mqtt client struct */
 static struct mqtt_client client;
@@ -33,7 +40,10 @@ uint8_t msg[] = "0 hello test";
 uint8_t cnt = 0;
 uint8_t buf[100];
 
-void wind_check(struct ktimer *work)
+//static K_TIMER_DEFINE(wind_check_timer, wind_check, NULL);
+static struct k_timer wind_check_timer;
+
+static void wind_check_callback(struct k_timer *work)
 {
 	int rc;
 	time_t temp;
@@ -65,7 +75,6 @@ void wind_check(struct ktimer *work)
 	begin_wind_sample();
 }
 
-K_TIMER_DEFINE(wind_check_timer, wind_check, NULL);
 
 static void lte_handler(const struct lte_lc_evt *const evt)
 {
@@ -158,10 +167,12 @@ void main(void)
 		return;
 	}
 	setenv("TZ", "PST8PDT", 1);
-	tzset();
+	struct _reent r;
+	_tzset_r(&r);
 
 	init_wind_sensor(&client);
 //	k_timer_start(&wind_check_timer, K_SECONDS(get_sample_time()), K_SECONDS(get_sample_time()));
+	k_timer_init(&wind_check_timer, wind_check_callback, NULL);
 	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60*5));
 
 do_connect:
