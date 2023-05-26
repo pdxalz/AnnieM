@@ -4,15 +4,15 @@
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
-menu "Cellfund Lesson 4 Exercise"
+menu "Annie Momiter"
 
-config MQTT_PUB_TOPIC
-	string "MQTT publish topic"
-	default "devacademy/publish/topic"
+config MQTT_PRIMARY_TOPIC
+	string "MQTT primary topic"
+	default "zimbuktu"
 
-config MQTT_SUB_TOPIC
-	string "MQTT subscribe topic"
-	default "devacademy/subscribe/topic"
+config MQTT_CMD_TOPIC
+	string "MQTT subscribe sub topic"
+	default "zimbuktu/cmd"
 
 config MQTT_CLIENT_ID
 	string "MQTT Client ID"

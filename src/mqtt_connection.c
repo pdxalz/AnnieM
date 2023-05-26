@@ -88,15 +88,15 @@ static int subscribe(struct mqtt_client *const c)
 {
 	struct mqtt_topic subscribe_topic = {
 		.topic = {
-			.utf8 = CONFIG_MQTT_SUB_TOPIC,
-			.size = strlen(CONFIG_MQTT_SUB_TOPIC)},
+			.utf8 = CONFIG_MQTT_CMD_TOPIC,
+			.size = strlen(CONFIG_MQTT_CMD_TOPIC)},
 		.qos = MQTT_QOS_1_AT_LEAST_ONCE};
 	const struct mqtt_subscription_list subscription_list = {
 		.list = &subscribe_topic,
 		.list_count = 1,
 		.message_id = 1234};
-	LOG_INF("Subscribing to: %s len %u", CONFIG_MQTT_SUB_TOPIC,
-			(unsigned int)strlen(CONFIG_MQTT_SUB_TOPIC));
+	LOG_INF("Subscribing to: %s len %u", CONFIG_MQTT_CMD_TOPIC,
+			(unsigned int)strlen(CONFIG_MQTT_CMD_TOPIC));
 	return mqtt_subscribe(c, &subscription_list);
 }
 

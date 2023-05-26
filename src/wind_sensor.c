@@ -62,7 +62,7 @@ static void clear_broker_history()
 		broker_cleared = true;
 		for (int i = 0; i < 24; ++i)
 		{
-			sprintf(topic, "zimbuktu/wind/%02d", i);
+			sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, i);
 			int err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
 								   "", 0, topic, 1);
 			if (err)
@@ -101,7 +101,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 	build_array_string(wmsg, &tm);
 	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);
 
-	sprintf(topic, "zimbuktu/wind/%02d", hour);
+	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
 	int err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
 						   wmsg, strlen(wmsg) - 1, topic, 1);
 	if (err)

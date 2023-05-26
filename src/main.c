@@ -117,25 +117,7 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 {
 	switch (has_changed)
 	{
-#if 0
-	case DK_BTN1_MSK:
-		/* STEP 7.2 - When button 1 is pressed, call data_publish() to publish a message */
-		if (button_state & DK_BTN1_MSK)
-		{
-			msg[0] = '0' + cnt;
-			cnt = (cnt + 1) % 10;
-			// int err = data_publish(&client, MQTT_QOS_1_AT_LEAST_ONCE,
-			// 					   CONFIG_BUTTON_EVENT_PUBLISH_MSG, sizeof(CONFIG_BUTTON_EVENT_PUBLISH_MSG) - 1);
-			int err = data_publish(&client, MQTT_QOS_1_AT_LEAST_ONCE,
-								   msg, sizeof(msg) - 1, CONFIG_MQTT_PUB_TOPIC, 0);
-			if (err)
-			{
-				LOG_INF("Failed to send message, %d", err);
-				return;
-			}
-		}
-		break;
-#endif
+
 	}
 }
 
