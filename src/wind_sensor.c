@@ -12,6 +12,7 @@
 
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
+#include <adp536x.h>
 
 LOG_MODULE_DECLARE(Lesson4_Exercise1);
 
@@ -98,8 +99,20 @@ static void speed_calc_callback(struct k_work *timer_id)
 	wind_sensor[minute / 5].speed = speed;
 	wind_sensor[minute / 5].direction = 1;
 
+	uint8_t soc;
+	uint16_t volts;
+
+	if (adp536x_fg_soc(&soc))
+	{
+		LOG_ERR("SOC failed");
+	}
+	if (adp536x_fg_volts(&volts))
+	{
+		LOG_ERR("volts failed");
+	}
+
 	build_array_string(wmsg, &tm);
-	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);
+	LOG_INF("h %d m:%d   %s  s=%d v=%d ", hour, minute, wmsg, soc, volts);
 
 	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
 	int err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
@@ -109,6 +122,21 @@ static void speed_calc_callback(struct k_work *timer_id)
 		LOG_INF("Failed to send message, %d", err);
 		return;
 	}
+
+
+	sprintf(wmsg, "{\"pwr\":\"%d, %d\"}", soc, volts);
+ 	sprintf(topic, "%s/health/%02d", CONFIG_MQTT_PRIMARY_TOPIC, minute); //hour
+
+	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+						   wmsg, strlen(wmsg) - 1, topic, 1);
+	if (err)
+	{
+		LOG_INF("Failed to send message, %d", err);
+		return;
+	}
+
+
+
 }
 
 K_WORK_DEFINE(repeating_timer_work, speed_calc_callback);
