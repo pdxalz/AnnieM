@@ -23,7 +23,7 @@ static int sample_time = DEFAULT_SAMPLE_TIME;
 /* MQTT Broker details. */
 static struct sockaddr_storage broker;
 
-LOG_MODULE_DECLARE(Lesson4_Exercise1);
+LOG_MODULE_DECLARE(AnnieM);
 
 #define SLEEPY_MODE "sleep"
 #define WAKEY_MODE "wake"
@@ -127,7 +127,7 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 	param.dup_flag = 0;
 	param.retain_flag = retain;
 	data_print("Publishing: ", data, len);
-	LOG_INF("to topic: %s len: %u", topic, (unsigned int)strlen(topic));
+//	LOG_INF("to topic: %s len: %u", topic, (unsigned int)strlen(topic));
 	return mqtt_publish(c, &param);
 }
 
@@ -242,7 +242,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 			break;
 		}
 
-		LOG_INF("PUBACK packet id: %u", evt->param.puback.message_id);
+//		LOG_INF("PUBACK packet id: %u", evt->param.puback.message_id);
 		break;
 
 	case MQTT_EVT_SUBACK:

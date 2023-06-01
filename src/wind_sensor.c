@@ -6,15 +6,14 @@
 #include <modem/lte_lc.h>
 #include <zephyr/drivers/gpio.h>
 #include <date_time.h>
-#include "power.h"
 
 #include <zephyr/net/mqtt.h>
 
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
-#include <adp536x.h>
+#include "power.h"
 
-LOG_MODULE_DECLARE(Lesson4_Exercise1);
+LOG_MODULE_DECLARE(AnnieM);
 
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
 static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
@@ -99,22 +98,11 @@ static void speed_calc_callback(struct k_work *timer_id)
 	wind_sensor[minute / 5].speed = speed;
 	wind_sensor[minute / 5].direction = 1;
 
-	uint8_t soc;
-	uint16_t volts;
-
-	if (adp536x_fg_soc(&soc))
-	{
-		LOG_ERR("SOC failed");
-	}
-	if (adp536x_fg_volts(&volts))
-	{
-		LOG_ERR("volts failed");
-	}
-
 	build_array_string(wmsg, &tm);
-	LOG_INF("h %d m:%d   %s  s=%d v=%d ", hour, minute, wmsg, soc, volts);
+//	LOG_INF("h %d m:%d   %s", hour, minute, wmsg); 
+//undo	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
+	sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
 
-	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
 	int err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
 						   wmsg, strlen(wmsg) - 1, topic, 1);
 	if (err)
@@ -122,20 +110,16 @@ static void speed_calc_callback(struct k_work *timer_id)
 		LOG_INF("Failed to send message, %d", err);
 		return;
 	}
-
-
-	sprintf(wmsg, "{\"pwr\":\"%d, %d\"}", soc, volts);
- 	sprintf(topic, "%s/health/%02d", CONFIG_MQTT_PRIMARY_TOPIC, minute); //hour
-
+	report_power(wmsg);
+	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
+	
 	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
 						   wmsg, strlen(wmsg) - 1, topic, 1);
 	if (err)
 	{
-		LOG_INF("Failed to send message, %d", err);
+		LOG_INF("Failed to send pwr message, %d", err);
 		return;
 	}
-
-
 
 }
 

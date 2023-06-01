@@ -34,7 +34,7 @@ static struct pollfd fds;
 
 static K_SEM_DEFINE(lte_connected, 0, 1);
 
-LOG_MODULE_REGISTER(Lesson4_Exercise1, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(AnnieM, LOG_LEVEL_INF);
 
 uint8_t msg[] = "0 hello test";
 uint8_t cnt = 0;
@@ -49,17 +49,10 @@ static void wind_check_callback(struct k_timer *work)
 	time_t temp;
 	struct tm *timeptr;
 
-	// if (0 != date_time_now(&temp))
-	// {
-	// 	LOG_INF("no time");
-	// }
-	// else
-	{
-		temp = time(NULL);
-		timeptr = localtime(&temp);
-		rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
-		LOG_INF("time: %s  chars: %d", buf, rc);
-	}
+	temp = time(NULL);
+	timeptr = localtime(&temp);
+	rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
+	//		LOG_INF("time: %s  chars: %d", buf, rc);
 
 	if (sleepy_mode())
 	{
@@ -153,7 +146,7 @@ void main(void)
 	_tzset_r(&r);
 
 	init_wind_sensor(&client);
-//	k_timer_start(&wind_check_timer, K_SECONDS(get_sample_time()), K_SECONDS(get_sample_time()));
+	//	k_timer_start(&wind_check_timer, K_SECONDS(get_sample_time()), K_SECONDS(get_sample_time()));
 	k_timer_init(&wind_check_timer, wind_check_callback, NULL);
 	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60*5));
 
