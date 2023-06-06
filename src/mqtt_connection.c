@@ -9,6 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <dk_buttons_and_leds.h>
 #include "mqtt_connection.h"
+#include "wind_sensor.h"
 
 //#define DEFAULT_SAMPLE_TIME (15) // todo remove
 #define DEFAULT_SAMPLE_TIME (5 * 60) // 5 minutes 
@@ -29,6 +30,7 @@ LOG_MODULE_DECLARE(AnnieM);
 #define WAKEY_MODE "wake"
 #define SAMPLE_FAST "fast"
 #define SAMPLE_SLOW "slow"
+#define REPORT "report"
 
 bool sleepy_mode()
 {
@@ -212,6 +214,13 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 					dk_set_led_off(1);
 					dk_set_led_off(0);
 					sample_time = DEFAULT_SAMPLE_TIME;
+				}
+				else if (strncmp(payload_buf, REPORT, sizeof(REPORT) - 1) == 0)
+				{
+					dk_set_led_on(2);
+					dk_set_led_off(1);
+					dk_set_led_off(0);
+					begin_wind_sample();
 				}
 			}
 			/* STEP 6.3 - On failed extraction of data */

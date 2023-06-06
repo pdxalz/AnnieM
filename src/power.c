@@ -14,16 +14,14 @@ LOG_MODULE_DECLARE(AnnieM);
 #define FAN_ENABLE_NODE DT_ALIAS(fanenable)
 #define BOOST_ENABLE_NODE DT_ALIAS(boostenable)
 
-
 static const struct gpio_dt_spec fan = GPIO_DT_SPEC_GET(FAN_ENABLE_NODE, gpios);
 static const struct gpio_dt_spec boost = GPIO_DT_SPEC_GET(BOOST_ENABLE_NODE, gpios);
 
-static struct mqtt_client *_pclient;
 uint8_t pwmsg[100];
 uint8_t ptopic[80];
 
-#define NUM_PWR 6
-int n_pwr=NUM_PWR-1;
+#define NUM_PWR 12
+int n_pwr = NUM_PWR - 1;
 uint8_t soc[NUM_PWR];
 uint16_t volts[NUM_PWR];
 
@@ -55,7 +53,6 @@ int init_power()
 	return 0;
 }
 
-
 void toggle_boost()
 {
 	gpio_pin_toggle_dt(&boost);
@@ -80,12 +77,11 @@ void report_power(uint8_t *buf)
 		return;
 	}
 
-
 	buf += sprintf(buf, "{\"pwr\":[");
 
-	for (int i = n_pwr; i < NUM_PWR+n_pwr; ++i)
+	for (int i = n_pwr; i < NUM_PWR + n_pwr; ++i)
 	{
-		buf += sprintf(buf, "[%d, %d],", soc[i%NUM_PWR], volts[i%NUM_PWR]);
+		buf += sprintf(buf, "[%d, %d],", soc[i % NUM_PWR], volts[i % NUM_PWR]);
 	}
 	--buf; // remove the last comma
 	sprintf(buf, "]}");
