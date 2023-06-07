@@ -8,6 +8,7 @@
 #include <adp536x.h>
 #include <zephyr/net/mqtt.h>
 #include "mqtt_connection.h"
+#include "temperature.h"
 
 LOG_MODULE_DECLARE(AnnieM);
 
@@ -24,6 +25,7 @@ uint8_t ptopic[80];
 int n_pwr = NUM_PWR - 1;
 uint8_t soc[NUM_PWR];
 uint16_t volts[NUM_PWR];
+uint16_t temperature[NUM_PWR];
 
 int init_power()
 {
@@ -66,6 +68,8 @@ void set_boost(bool enable)
 
 void report_power(uint8_t *buf)
 {
+	double temp;
+
 	if (adp536x_fg_soc(&soc[n_pwr]))
 	{
 		LOG_ERR("SOC failed");
@@ -76,12 +80,18 @@ void report_power(uint8_t *buf)
 		LOG_ERR("volts failed");
 		return;
 	}
-
+	if (get_temperature(&temp))
+	{
+		
+		LOG_ERR("temperature failed");
+		return;
+	}
+	temperature[n_pwr] = temp;
 	buf += sprintf(buf, "{\"pwr\":[");
 
 	for (int i = n_pwr; i < NUM_PWR + n_pwr; ++i)
 	{
-		buf += sprintf(buf, "[%d, %d],", soc[i % NUM_PWR], volts[i % NUM_PWR]);
+		buf += sprintf(buf, "[%d, %d, %d],", soc[i % NUM_PWR], volts[i % NUM_PWR], temperature[i % NUM_PWR]);
 	}
 	--buf; // remove the last comma
 	sprintf(buf, "]}");

@@ -10,6 +10,8 @@
 
 // For more help, browse the DeviceTree documentation at https: //docs.zephyrproject.org/latest/guides/dts/index.html
 // You can also visit the nRF DeviceTree extension documentation at https: //nrfconnect.github.io/vscode-nrf-connect/devicetree/nrfdevicetree.html
+
+
 /{
     wind_speed {
         compatible = "gpio-keys";
@@ -34,11 +36,17 @@
 		windspeed0 = &windspeed0;
 		fanenable = &fanenable;
 		boostenable = &boostenable;
+		temp-sensor = &bme680;
     };
 	nrf52840_reset: gpio-reset {
 		status = "disabled";
 	};
 
+};
+
+
+&i2c2 {
+bme680: bme680@76 {};
 };
 
 &pinctrl {

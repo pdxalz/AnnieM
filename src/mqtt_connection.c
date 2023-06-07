@@ -129,7 +129,7 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 	param.dup_flag = 0;
 	param.retain_flag = retain;
 	data_print("Publishing: ", data, len);
-//	LOG_INF("to topic: %s len: %u", topic, (unsigned int)strlen(topic));
+	LOG_INF("to topic: %s len: %u", topic, (unsigned int)strlen(topic));
 	return mqtt_publish(c, &param);
 }
 

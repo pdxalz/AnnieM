@@ -81,13 +81,16 @@ static void speed_calc_callback(struct k_work *timer_id)
 	struct tm tm;
 	localtime_r(&now, &tm);
 
-	clear_broker_history();
+	bool bsendit = true;
+
+	// undo	clear_broker_history();
 
 	int hour = tm.tm_hour;
 	int minute = tm.tm_min;
 
 	if (minute < 60 / SAMPLES_PER_HOUR)
 	{
+		bsendit = true;
 		for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
 		{
 			wind_sensor[i].speed = 0;
@@ -99,28 +102,36 @@ static void speed_calc_callback(struct k_work *timer_id)
 	wind_sensor[minute / 5].direction = 1;
 
 	build_array_string(wmsg, &tm);
-//	LOG_INF("h %d m:%d   %s", hour, minute, wmsg); 
-//undo	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
-	sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
+	//	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);
+	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
+	//sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
 
-	int err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-						   wmsg, strlen(wmsg) - 1, topic, 1);
-	if (err)
+	int err;
+	// undo
+	if (bsendit)
 	{
-		LOG_INF("Failed to send message, %d", err);
-		return;
+
+		err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+						   wmsg, strlen(wmsg) - 1, topic, 1);
+		if (err)
+		{
+			LOG_INF("Failed to send message, %d", err);
+			return;
+		}
 	}
 	report_power(wmsg);
 	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
-	
-	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-						   wmsg, strlen(wmsg) - 1, topic, 1);
-	if (err)
+	if (bsendit)
 	{
-		LOG_INF("Failed to send pwr message, %d", err);
-		return;
-	}
 
+		err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+						   wmsg, strlen(wmsg) - 1, topic, 1);
+		if (err)
+		{
+			LOG_INF("Failed to send pwr message, %d", err);
+			return;
+		}
+	}
 }
 
 K_WORK_DEFINE(repeating_timer_work, speed_calc_callback);
