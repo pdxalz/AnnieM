@@ -12,6 +12,7 @@
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
 #include "power.h"
+#include "adc.h"
 
 LOG_MODULE_DECLARE(AnnieM);
 
@@ -74,6 +75,20 @@ static void clear_broker_history()
 	}
 }
 
+static uint8_t get_wind_direction()
+{
+	uint16_t voltage;
+
+	if (get_battery_voltage(&voltage) != 0)
+	{
+		LOG_INF("Failed to get direction voltage");
+	};
+	LOG_INF("direction voltage, %d", voltage);
+
+	return (voltage / (3600/16));
+
+}
+ 
 static void speed_calc_callback(struct k_work *timer_id)
 {
 	time_t now;
@@ -90,6 +105,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 
 	if (minute < 60 / SAMPLES_PER_HOUR)
 	{
+		// zero out hourly data
 		bsendit = true;
 		for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
 		{
@@ -99,7 +115,9 @@ static void speed_calc_callback(struct k_work *timer_id)
 	}
 
 	wind_sensor[minute / 5].speed = speed;
-	wind_sensor[minute / 5].direction = 1;
+//	wind_sensor[minute / 5].direction = 1;
+	wind_sensor[minute / 5].direction = get_wind_direction();
+
 
 	build_array_string(wmsg, &tm);
 	//	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);

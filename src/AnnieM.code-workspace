@@ -10,6 +10,10 @@
 		{
 			"name": "kscan",
 			"path": "../../kscan"
+		},
+		{
+			"name": "adc",
+			"path": "../../../adc"
 		}
 	],
 	"settings": {
@@ -25,8 +29,13 @@
 			"lte_lc.h": "c",
 			"log.h": "c",
 			"adp536x.h": "c",
-			"temperature.h": "c"
+			"temperature.h": "c",
+			"socket.h": "c",
+			"adc.h": "c"
 		},
-		"nrf-connect.toolchain.path": "${nrf-connect.toolchain:2.3.0}"
+		"nrf-connect.toolchain.path": "${nrf-connect.toolchain:2.3.0}",
+		"nrf-connect.applications": [
+			"${workspaceFolder:adc}"
+		]
 	}
 }

@@ -24,6 +24,7 @@
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
 #include "power.h"
+#include "adc.h"
 
 extern int setenv(const char *name, const char *value, int overwrite);
 
@@ -40,7 +41,7 @@ uint8_t msg[] = "0 hello test";
 uint8_t cnt = 0;
 uint8_t buf[100];
 
-//static K_TIMER_DEFINE(wind_check_timer, wind_check, NULL);
+// static K_TIMER_DEFINE(wind_check_timer, wind_check, NULL);
 static struct k_timer wind_check_timer;
 
 static void wind_check_callback(struct k_timer *work)
@@ -67,7 +68,6 @@ static void wind_check_callback(struct k_timer *work)
 	set_boost(true);
 	begin_wind_sample();
 }
-
 
 static void lte_handler(const struct lte_lc_evt *const evt)
 {
@@ -110,7 +110,6 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 {
 	switch (has_changed)
 	{
-
 	}
 }
 
@@ -127,7 +126,7 @@ void main(void)
 	{
 		LOG_ERR("Failed to initialize the power control");
 	}
-
+	init_adc();
 	modem_configure();
 
 	if (dk_buttons_init(button_handler) != 0)
@@ -148,7 +147,7 @@ void main(void)
 	init_wind_sensor(&client);
 	//	k_timer_start(&wind_check_timer, K_SECONDS(get_sample_time()), K_SECONDS(get_sample_time()));
 	k_timer_init(&wind_check_timer, wind_check_callback, NULL);
-	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60*5));
+	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60 * 5));
 
 do_connect:
 	if (connect_attempt++ > 0)
