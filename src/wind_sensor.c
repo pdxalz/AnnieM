@@ -20,6 +20,8 @@ LOG_MODULE_DECLARE(AnnieM);
 static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
 
 #define WIND_SCALE (102.0 / 60.0)
+#define MAX_DIRECTION_VOLTAGE 2800
+#define NORTH_OFFSET 84
 
 static volatile int frequency = 0;
 static volatile int64_t lasttime = 0;
@@ -30,6 +32,9 @@ static bool broker_cleared = false;
 uint8_t wmsg[200];
 uint8_t tmsg[80];
 uint8_t topic[80];
+
+uint16_t vbuf[8];
+uint16_t v_index = 0;
 
 #define SAMPLES_PER_HOUR 12
 struct w_sensor
@@ -75,20 +80,37 @@ static void clear_broker_history()
 	}
 }
 
-static uint8_t get_wind_direction()
+static uint16_t circ_avg(uint16_t a, uint16_t b)
+{
+	int16_t diff = ((a - b + 180 + 360) % 360) - 180;
+	int16_t angle = (360 + b + (diff / 2)) % 360;
+	//	LOG_INF("avg=      %d, %d, %d, %d", a, b, diff, angle);
+	return angle;
+}
+
+uint16_t get_wind_direction()
 {
 	uint16_t voltage;
 
 	if (get_battery_voltage(&voltage) != 0)
 	{
 		LOG_INF("Failed to get direction voltage");
+		return 0;
 	};
-	LOG_INF("direction voltage, %d", voltage);
 
-	return (voltage / (3600/16));
+	//	LOG_INF("direction voltage, %d", voltage);
+	vbuf[v_index] = (((uint32_t)voltage * 360) / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360;
 
+	v_index = (v_index + 1) % 8;
+	uint16_t avg = circ_avg(
+		circ_avg(circ_avg(vbuf[0], vbuf[1]), circ_avg(vbuf[2], vbuf[3])),
+		circ_avg(circ_avg(vbuf[4], vbuf[5]), circ_avg(vbuf[6], vbuf[7])));
+	//	uint16_t avg = circ_avg(vbuf[0], vbuf[1]);
+	//	LOG_INF("vv=, %d, %d, %d, %d, %d, %d", voltage, v, v_index, vbuf[0], vbuf[1], avg);
+	// LOG_INF("volts, v=, %d, %d", voltage, v);
+	return (avg); // * 360 / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360);
 }
- 
+
 static void speed_calc_callback(struct k_work *timer_id)
 {
 	time_t now;
@@ -115,14 +137,13 @@ static void speed_calc_callback(struct k_work *timer_id)
 	}
 
 	wind_sensor[minute / 5].speed = speed;
-//	wind_sensor[minute / 5].direction = 1;
+	//	wind_sensor[minute / 5].direction = 1;
 	wind_sensor[minute / 5].direction = get_wind_direction();
-
 
 	build_array_string(wmsg, &tm);
 	//	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);
 	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
-	//sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
+	// sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
 
 	int err;
 	// undo

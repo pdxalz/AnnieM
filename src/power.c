@@ -62,8 +62,8 @@ void toggle_boost()
 
 void set_boost(bool enable)
 {
-	//	gpio_pin_set_dt(&boost, 1);
-	gpio_pin_set_dt(&boost, enable ? 1 : 0);
+	gpio_pin_set_dt(&boost, 1);
+	// undo	gpio_pin_set_dt(&boost, enable ? 1 : 0);
 }
 
 void report_power(uint8_t *buf)
@@ -82,7 +82,7 @@ void report_power(uint8_t *buf)
 	}
 	if (get_temperature(&temp))
 	{
-		
+
 		LOG_ERR("temperature failed");
 		return;
 	}

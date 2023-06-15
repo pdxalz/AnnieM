@@ -1,10 +1,10 @@
 #include <zephyr/drivers/adc.h>
 #include "adc.h"
 
-#define BATVOLT_R1 4.7f                 // MOhm
-#define BATVOLT_R2 10.0f                // MOhm
-#define INPUT_VOLT_RANGE 3.6f           // Volts
-#define VALUE_RANGE_10_BIT 1.023        // (2^10 - 1) / 1000
+#define BATVOLT_R1 4.7f			 // MOhm
+#define BATVOLT_R2 10.0f		 // MOhm
+#define INPUT_VOLT_RANGE 3.6f	 // Volts
+#define VALUE_RANGE_10_BIT 1.023 // (2^10 - 1) / 1000
 
 #define ADC_NODE DT_NODELABEL(adc)
 
@@ -25,7 +25,7 @@ static const struct adc_channel_cfg m_1st_channel_cfg = {
 	.reference = ADC_REFERENCE,
 	.acquisition_time = ADC_ACQUISITION_TIME,
 	.channel_id = ADC_1ST_CHANNEL_ID,
-	.input_positive   = ADC_1ST_CHANNEL_INPUT,
+	.input_positive = ADC_1ST_CHANNEL_INPUT,
 };
 
 int get_battery_voltage(uint16_t *battery_voltage)
@@ -39,20 +39,23 @@ int get_battery_voltage(uint16_t *battery_voltage)
 		.resolution = ADC_RESOLUTION,
 	};
 
-	if (!adc_dev) {
+	if (!adc_dev)
+	{
 		return -1;
 	}
 
 	err = adc_read(adc_dev, &sequence);
-	if (err) {
+	if (err)
+	{
 		printk("ADC read err: %d\n", err);
 
 		return err;
 	}
 
 	float sample_value = 0;
-	for (int i = 0; i < BUFFER_SIZE; i++) {
-		sample_value += (float) m_sample_buffer[i];
+	for (int i = 0; i < BUFFER_SIZE; i++)
+	{
+		sample_value += (float)m_sample_buffer[i];
 	}
 	sample_value /= BUFFER_SIZE;
 
@@ -66,14 +69,16 @@ bool init_adc()
 	int err;
 
 	adc_dev = DEVICE_DT_GET(ADC_NODE);
-	if (!adc_dev) {
+	if (!adc_dev)
+	{
 		printk("Error getting adc failed\n");
 
 		return false;
 	}
 
 	err = adc_channel_setup(adc_dev, &m_1st_channel_cfg);
-	if (err) {
+	if (err)
+	{
 		printk("Error in adc setup: %d\n", err);
 
 		return false;

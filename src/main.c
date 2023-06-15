@@ -44,6 +44,14 @@ uint8_t buf[100];
 // static K_TIMER_DEFINE(wind_check_timer, wind_check, NULL);
 static struct k_timer wind_check_timer;
 
+static void adc_check(struct k_timer *work)
+{
+	uint16_t dir = get_wind_direction();
+	LOG_INF("dir: %d ", dir);
+}
+
+K_TIMER_DEFINE(ktimeradc, adc_check, NULL);
+
 static void wind_check_callback(struct k_timer *work)
 {
 	int rc;
@@ -148,6 +156,7 @@ void main(void)
 	//	k_timer_start(&wind_check_timer, K_SECONDS(get_sample_time()), K_SECONDS(get_sample_time()));
 	k_timer_init(&wind_check_timer, wind_check_callback, NULL);
 	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60 * 5));
+	k_timer_start(&ktimeradc, K_SECONDS(15), K_MSEC(100));
 
 do_connect:
 	if (connect_attempt++ > 0)
