@@ -28,6 +28,7 @@ static volatile int64_t lasttime = 0;
 static volatile bool toggle = false;
 static int speed;
 static bool broker_cleared = false;
+static uint16_t wind_direction;
 
 uint8_t wmsg[200];
 uint8_t tmsg[80];
@@ -40,7 +41,7 @@ uint16_t v_index = 0;
 struct w_sensor
 {
 	uint8_t speed;
-	uint8_t direction;
+	uint16_t direction;
 } wind_sensor[12];
 
 /* The mqtt client struct */
@@ -88,28 +89,29 @@ static uint16_t circ_avg(uint16_t a, uint16_t b)
 	return angle;
 }
 
-uint16_t get_wind_direction()
+static void check_wind_direction(struct k_timer *work)
 {
 	uint16_t voltage;
 
 	if (get_battery_voltage(&voltage) != 0)
 	{
 		LOG_INF("Failed to get direction voltage");
-		return 0;
+		return;
 	};
 
 	//	LOG_INF("direction voltage, %d", voltage);
 	vbuf[v_index] = (((uint32_t)voltage * 360) / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360;
 
 	v_index = (v_index + 1) % 8;
-	uint16_t avg = circ_avg(
+	wind_direction = circ_avg(
 		circ_avg(circ_avg(vbuf[0], vbuf[1]), circ_avg(vbuf[2], vbuf[3])),
 		circ_avg(circ_avg(vbuf[4], vbuf[5]), circ_avg(vbuf[6], vbuf[7])));
 	//	uint16_t avg = circ_avg(vbuf[0], vbuf[1]);
-	//	LOG_INF("vv=, %d, %d, %d, %d, %d, %d", voltage, v, v_index, vbuf[0], vbuf[1], avg);
+	LOG_INF("vv= %d, %d, %d", vbuf[0], vbuf[1], wind_direction);
 	// LOG_INF("volts, v=, %d, %d", voltage, v);
-	return (avg); // * 360 / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360);
 }
+
+K_TIMER_DEFINE(ktimeradc, check_wind_direction, NULL);
 
 static void speed_calc_callback(struct k_work *timer_id)
 {
@@ -118,9 +120,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 	struct tm tm;
 	localtime_r(&now, &tm);
 
-	bool bsendit = true;
-
-	// undo	clear_broker_history();
+	clear_broker_history();
 
 	int hour = tm.tm_hour;
 	int minute = tm.tm_min;
@@ -128,7 +128,6 @@ static void speed_calc_callback(struct k_work *timer_id)
 	if (minute < 60 / SAMPLES_PER_HOUR)
 	{
 		// zero out hourly data
-		bsendit = true;
 		for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
 		{
 			wind_sensor[i].speed = 0;
@@ -136,9 +135,15 @@ static void speed_calc_callback(struct k_work *timer_id)
 		}
 	}
 
+	// 0,0 indicates unset item.
+	if (speed == 0 && wind_direction == 0)
+	{
+		wind_direction = 1;
+	}
+
 	wind_sensor[minute / 5].speed = speed;
-	//	wind_sensor[minute / 5].direction = 1;
-	wind_sensor[minute / 5].direction = get_wind_direction();
+	k_timer_stop(&ktimeradc);
+	wind_sensor[minute / 5].direction = wind_direction;
 
 	build_array_string(wmsg, &tm);
 	//	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);
@@ -146,30 +151,24 @@ static void speed_calc_callback(struct k_work *timer_id)
 	// sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
 
 	int err;
-	// undo
-	if (bsendit)
-	{
 
-		err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-						   wmsg, strlen(wmsg) - 1, topic, 1);
-		if (err)
-		{
-			LOG_INF("Failed to send message, %d", err);
-			return;
-		}
+	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+					   wmsg, strlen(wmsg) - 1, topic, 1);
+	if (err)
+	{
+		LOG_INF("Failed to send message, %d", err);
+		return;
 	}
+
 	report_power(wmsg);
 	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
-	if (bsendit)
-	{
 
-		err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-						   wmsg, strlen(wmsg) - 1, topic, 1);
-		if (err)
-		{
-			LOG_INF("Failed to send pwr message, %d", err);
-			return;
-		}
+	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+					   wmsg, strlen(wmsg) - 1, topic, 1);
+	if (err)
+	{
+		LOG_INF("Failed to send pwr message, %d", err);
+		return;
 	}
 }
 
@@ -207,6 +206,8 @@ void begin_wind_sample()
 {
 	frequency = 0;
 	k_timer_start(&frequency_timer, K_SECONDS(6), K_FOREVER);
+
+	k_timer_start(&ktimeradc, K_SECONDS(1), K_MSEC(400));
 }
 
 int init_wind_sensor(struct mqtt_client *c)
