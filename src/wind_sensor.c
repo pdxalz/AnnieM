@@ -20,12 +20,11 @@ LOG_MODULE_DECLARE(AnnieM);
 static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
 
 #define WIND_SCALE (102.0 / 60.0)
-#define MAX_DIRECTION_VOLTAGE 2800
+#define MAX_DIRECTION_VOLTAGE 2900
 #define NORTH_OFFSET 84
 
 static volatile int frequency = 0;
 static volatile int64_t lasttime = 0;
-static volatile bool toggle = false;
 static int speed;
 static bool broker_cleared = false;
 static uint16_t wind_direction;
@@ -33,6 +32,7 @@ static uint16_t wind_direction;
 uint8_t wmsg[200];
 uint8_t tmsg[80];
 uint8_t topic[80];
+uint8_t buf[100];
 
 uint16_t vbuf[8];
 uint16_t v_index = 0;
@@ -46,11 +46,49 @@ struct w_sensor
 
 /* The mqtt client struct */
 static struct mqtt_client *_pclient;
+static struct gpio_callback windspeed_cb_data;
+
+static void wind_check_callback(struct k_timer *work);
+static void check_wind_direction(struct k_timer *work);
+void frequency_counter(struct k_timer *work);
+static void speed_calc_callback(struct k_work *timer_id);
+
+
+static K_TIMER_DEFINE(wind_check_timer, wind_check_callback, NULL);
+static K_TIMER_DEFINE(ktimeradc, check_wind_direction, NULL);
+static K_TIMER_DEFINE(frequency_timer, frequency_counter, NULL);
+static K_WORK_DEFINE(repeating_timer_work, speed_calc_callback);
+
+
+static void wind_check_callback(struct k_timer *work)
+{
+	int rc;
+	time_t temp;
+	struct tm *timeptr;
+
+	temp = time(NULL);
+	timeptr = localtime(&temp);
+	rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
+	//		LOG_INF("time: %s  chars: %d", buf, rc);
+
+	if (sleepy_mode())
+	{
+		dk_set_led_on(DK_LED3);
+		dk_set_led_off(DK_LED2);
+		dk_set_led_off(DK_LED1);
+		return;
+	}
+	dk_set_led_on(DK_LED1);
+	dk_set_led_off(DK_LED2);
+
+	set_boost(true);
+	begin_wind_sample();
+}
 
 static void build_array_string(uint8_t *buf, struct tm *t)
 {
 
-	buf += sprintf(buf, "{\"time\":\"%04d-%02d-%02dT%02d:%02d:%02d.000Z\", ", t->tm_year, t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+	buf += sprintf(buf, "{\"time\":\"%04d-%02d-%02dT%02d:%02d:%02d.000Z\", ", (t->tm_year+1900), t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
 	buf += sprintf(buf, "{\"wind\":[");
 
 	for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
@@ -111,8 +149,6 @@ static void check_wind_direction(struct k_timer *work)
 	// LOG_INF("volts, v=, %d, %d", voltage, v);
 }
 
-K_TIMER_DEFINE(ktimeradc, check_wind_direction, NULL);
-
 static void speed_calc_callback(struct k_work *timer_id)
 {
 	time_t now;
@@ -172,7 +208,6 @@ static void speed_calc_callback(struct k_work *timer_id)
 	}
 }
 
-K_WORK_DEFINE(repeating_timer_work, speed_calc_callback);
 
 void frequency_counter(struct k_timer *work)
 {
@@ -187,7 +222,6 @@ void frequency_counter(struct k_timer *work)
 	k_work_submit(&repeating_timer_work);
 }
 
-K_TIMER_DEFINE(frequency_timer, frequency_counter, NULL);
 
 void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
@@ -195,12 +229,10 @@ void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint3
 	if ((time - lasttime) > 10)
 	{
 		frequency++;
-		toggle = !toggle;
 	}
 	lasttime = time;
 }
 
-static struct gpio_callback windspeed_cb_data;
 
 void begin_wind_sample()
 {
@@ -232,6 +264,8 @@ int init_wind_sensor(struct mqtt_client *c)
 
 	/* STEP 7 - Add the callback function by calling gpio_add_callback()   */
 	gpio_add_callback(windspeed.port, &windspeed_cb_data);
+
+	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60 * 5));
 
 	return 0;
 }

@@ -86,7 +86,7 @@ void report_power(uint8_t *buf)
 		LOG_ERR("temperature failed");
 		return;
 	}
-	temperature[n_pwr] = temp;
+	temperature[n_pwr] = temp * 9.0 / 5.0 + 32.0;
 	buf += sprintf(buf, "{\"pwr\":[");
 
 	for (int i = n_pwr; i < NUM_PWR + n_pwr; ++i)

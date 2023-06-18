@@ -37,36 +37,6 @@ static K_SEM_DEFINE(lte_connected, 0, 1);
 
 LOG_MODULE_REGISTER(AnnieM, LOG_LEVEL_INF);
 
-uint8_t msg[] = "0 hello test";
-uint8_t cnt = 0;
-uint8_t buf[100];
-
-static void wind_check_callback(struct k_timer *work)
-{
-	int rc;
-	time_t temp;
-	struct tm *timeptr;
-
-	temp = time(NULL);
-	timeptr = localtime(&temp);
-	rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
-	//		LOG_INF("time: %s  chars: %d", buf, rc);
-
-	if (sleepy_mode())
-	{
-		dk_set_led_on(DK_LED3);
-		dk_set_led_off(DK_LED2);
-		dk_set_led_off(DK_LED1);
-		return;
-	}
-	dk_set_led_on(DK_LED1);
-	dk_set_led_off(DK_LED2);
-
-	set_boost(true);
-	begin_wind_sample();
-}
-static K_TIMER_DEFINE(wind_check_timer, wind_check_callback, NULL);
-
 static void lte_handler(const struct lte_lc_evt *const evt)
 {
 	switch (evt->type)
@@ -104,13 +74,6 @@ static void modem_configure(void)
 	dk_set_led_on(DK_LED2);
 }
 
-static void button_handler(uint32_t button_state, uint32_t has_changed)
-{
-	switch (has_changed)
-	{
-	}
-}
-
 void main(void)
 {
 	int err;
@@ -127,11 +90,6 @@ void main(void)
 	init_adc();
 	modem_configure();
 
-	if (dk_buttons_init(button_handler) != 0)
-	{
-		LOG_ERR("Failed to initialize the buttons library");
-	}
-
 	err = client_init(&client);
 	if (err)
 	{
@@ -143,9 +101,6 @@ void main(void)
 	_tzset_r(&r);
 
 	init_wind_sensor(&client);
-	//	k_timer_start(&wind_check_timer, K_SECONDS(get_sample_time()), K_SECONDS(get_sample_time()));
-	// 		k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60));
-	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60 * 5));
 
 do_connect:
 	if (connect_attempt++ > 0)

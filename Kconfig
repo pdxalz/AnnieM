@@ -54,6 +54,16 @@ config MQTT_RECONNECT_DELAY_S
 	int "Seconds to delay before attempting to reconnect to the broker."
 	default 60
 
+config TEMP_DATA_USE_SENSOR
+	bool "Use genuine temperature data"
+	depends on BOARD_THINGY91_NRF9160_NS
+	default y if BOARD_THINGY91_NRF9160_NS
+	select SENSOR
+	select BME680
+	help
+	  Sets whether to take genuine temperature measurements from a
+	  connected BME680 sensor, or just simulate sensor data.
+	  
 endmenu
 
 source "Kconfig.zephyr"
