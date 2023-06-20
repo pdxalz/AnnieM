@@ -89,7 +89,7 @@ static void build_array_string(uint8_t *buf, struct tm *t)
 {
 
 	buf += sprintf(buf, "{\"time\":\"%04d-%02d-%02dT%02d:%02d:%02d.000Z\", ", (t->tm_year+1900), t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
-	buf += sprintf(buf, "{\"wind\":[");
+	buf += sprintf(buf, "\"wind\":[");
 
 	for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
 	{
@@ -189,7 +189,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 	int err;
 
 	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-					   wmsg, strlen(wmsg) - 1, topic, 1);
+					   wmsg, strlen(wmsg), topic, 1);
 	if (err)
 	{
 		LOG_INF("Failed to send message, %d", err);
@@ -200,7 +200,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
 
 	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-					   wmsg, strlen(wmsg) - 1, topic, 1);
+					   wmsg, strlen(wmsg), topic, 1);
 	if (err)
 	{
 		LOG_INF("Failed to send pwr message, %d", err);
