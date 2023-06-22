@@ -9,6 +9,7 @@
 #include <zephyr/net/mqtt.h>
 #include "mqtt_connection.h"
 #include "temperature.h"
+#include "power.h"
 
 LOG_MODULE_DECLARE(AnnieM);
 
@@ -97,4 +98,10 @@ void report_power(uint8_t *buf)
 	sprintf(buf, "]}");
 
 	n_pwr = (n_pwr - 1 + NUM_PWR) % NUM_PWR;
+}
+int az_set_led_on(uint8_t led_idx)
+{
+	dk_set_led_on(led_idx);
+//	dk_set_led_off(led_idx);
+	
 }

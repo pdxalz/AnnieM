@@ -71,7 +71,7 @@ static void modem_configure(void)
 	}
 	k_sem_take(&lte_connected, K_FOREVER);
 	LOG_INF("Connected to LTE network");
-	dk_set_led_on(DK_LED2);
+	az_set_led_on(DK_LED2);
 }
 
 void main(void)

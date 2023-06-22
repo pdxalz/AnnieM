@@ -12,8 +12,8 @@
 			"path": "../../kscan"
 		},
 		{
-			"name": "adc",
-			"path": "../../../adc"
+			"name": "system_off",
+			"path": "../../../system_off"
 		}
 	],
 	"settings": {
@@ -34,8 +34,6 @@
 			"adc.h": "c"
 		},
 		"nrf-connect.toolchain.path": "${nrf-connect.toolchain:2.3.0}",
-		"nrf-connect.applications": [
-			"${workspaceFolder:adc}"
-		]
+		"nrf-connect.applications": []
 	}
 }

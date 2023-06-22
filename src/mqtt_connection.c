@@ -10,6 +10,7 @@
 #include <dk_buttons_and_leds.h>
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
+#include "power.h"
 
 //#define DEFAULT_SAMPLE_TIME (15) // todo remove
 #define DEFAULT_SAMPLE_TIME (5 * 60) // 5 minutes 
@@ -181,7 +182,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 				// Control the LED
 				if (strncmp(payload_buf, CONFIG_TURN_LED_ON_CMD, sizeof(CONFIG_TURN_LED_ON_CMD) - 1) == 0)
 				{
-					dk_set_led_on(LED_CONTROL_OVER_MQTT);
+					az_set_led_on(LED_CONTROL_OVER_MQTT);
 				}
 				else if (strncmp(payload_buf, CONFIG_TURN_LED_OFF_CMD, sizeof(CONFIG_TURN_LED_OFF_CMD) - 1) == 0)
 				{
@@ -191,21 +192,21 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 				{
 					dk_set_led_off(0);
 					dk_set_led_off(1);
-					dk_set_led_on(2);
+					az_set_led_on(2);
 					sleep_mode = true;
 				}
 				else if (strncmp(payload_buf, WAKEY_MODE, sizeof(WAKEY_MODE) - 1) == 0)
 				{
 					dk_set_led_off(2);
-					dk_set_led_on(1);
-					dk_set_led_on(0);
+					az_set_led_on(1);
+					az_set_led_on(0);
 					sleep_mode = false;
 				}
 				else if (strncmp(payload_buf, SAMPLE_FAST, sizeof(SAMPLE_FAST) - 1) == 0)
 				{
-					dk_set_led_on(2);
-					dk_set_led_on(1);
-					dk_set_led_on(0);
+					az_set_led_on(2);
+					az_set_led_on(1);
+					az_set_led_on(0);
 					sample_time = FAST_SAMPLE_TIME;
 				}
 				else if (strncmp(payload_buf, SAMPLE_SLOW, sizeof(SAMPLE_SLOW) - 1) == 0)
@@ -217,7 +218,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 				}
 				else if (strncmp(payload_buf, REPORT, sizeof(REPORT) - 1) == 0)
 				{
-					dk_set_led_on(2);
+					az_set_led_on(2);
 					dk_set_led_off(1);
 					dk_set_led_off(0);
 					begin_wind_sample();

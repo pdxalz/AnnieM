@@ -73,12 +73,12 @@ static void wind_check_callback(struct k_timer *work)
 
 	if (sleepy_mode())
 	{
-		dk_set_led_on(DK_LED3);
+		az_set_led_on(DK_LED3);
 		dk_set_led_off(DK_LED2);
 		dk_set_led_off(DK_LED1);
 		return;
 	}
-	dk_set_led_on(DK_LED1);
+	az_set_led_on(DK_LED1);
 	dk_set_led_off(DK_LED2);
 
 	set_boost(true);
@@ -215,7 +215,7 @@ void frequency_counter(struct k_timer *work)
 	speed = (int)f;
 	LOG_INF("Windspeed %d ...", speed);
 	frequency = 0;
-	dk_set_led_on(DK_LED2);
+	az_set_led_on(DK_LED2);
 	dk_set_led_off(DK_LED1);
 	set_boost(false);
 
