@@ -206,6 +206,17 @@ static void speed_calc_callback(struct k_work *timer_id)
 		LOG_INF("Failed to send pwr message, %d", err);
 		return;
 	}
+
+	sprintf(topic, "%s/recent", CONFIG_MQTT_PRIMARY_TOPIC);
+	sprintf(wmsg, "{\"time\":\"%2d/%2d %2d:%02d\",\"sp\":\"%d\",\"dir\":\"%d\",\"mv\":\"%d\"}",
+		tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, speed, wind_direction, get_volts());
+	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+					   wmsg, strlen(wmsg), topic, 1);
+	if (err)
+	{
+		LOG_INF("Failed to send pwr message, %d", err);
+		return;
+	}
 }
 
 

@@ -27,6 +27,7 @@ int n_pwr = NUM_PWR - 1;
 uint8_t soc[NUM_PWR];
 uint16_t volts[NUM_PWR];
 uint16_t temperature[NUM_PWR];
+uint16_t current_volts;
 
 int init_power()
 {
@@ -67,6 +68,11 @@ void set_boost(bool enable)
 	gpio_pin_set_dt(&boost, enable ? 1 : 0);
 }
 
+uint16_t get_volts()
+{
+	return current_volts;
+}
+
 void report_power(uint8_t *buf)
 {
 	double temp;
@@ -81,6 +87,7 @@ void report_power(uint8_t *buf)
 		LOG_ERR("volts failed");
 		return;
 	}
+	current_volts = volts[n_pwr];
 	if (get_temperature(&temp))
 	{
 
