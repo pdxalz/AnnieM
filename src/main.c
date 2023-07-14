@@ -1,31 +1,22 @@
 /*
- * Copyright (c) 2018 Nordic Semiconductor ASA
+ * Copyright (c) 2019-2022 Actinius
  *
- * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stdio.h>
 #include <zephyr/kernel.h>
-#include <zephyr/sys/printk.h>
 #include <zephyr/net/socket.h>
-#include <dk_buttons_and_leds.h>
 #include <modem/lte_lc.h>
 #include <zephyr/drivers/gpio.h>
-#include <date_time.h>
-#include <soc.h>
-#include <zephyr/drivers/kscan.h>
 
-#define LOG_LEVEL LOG_LEVEL_DBG
-#include <zephyr/logging/log.h>
-
-/* STEP 2.3 - Include the header file for the MQTT Library*/
 #include <zephyr/net/mqtt.h>
+#include <date_time.h>
 
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
-#include "power.h"
-#include "adc.h"
 
+#include "leds.h"
 extern int setenv(const char *name, const char *value, int overwrite);
 
 /* The mqtt client struct */
@@ -35,139 +26,163 @@ static struct pollfd fds;
 
 static K_SEM_DEFINE(lte_connected, 0, 1);
 
-LOG_MODULE_REGISTER(AnnieM, LOG_LEVEL_INF);
+#define TOPIC_STR "zimbuktu2/testing"
+
+
+static void mm_callback(struct k_work *timer_id)
+{
+    int err = data_publish(&client, MQTT_QOS_1_AT_LEAST_ONCE,
+                           CONFIG_BUTTON_EVENT_PUBLISH_MSG, sizeof(CONFIG_BUTTON_EVENT_PUBLISH_MSG) - 1,TOPIC_STR, 1);
+    if (err)
+    {
+        turn_leds_on_with_color(RED);
+        printk("Failed to send message, %d", err);
+        return;
+    }
+    turn_leds_on_with_color(YELLOW);
+
+}
+static K_WORK_DEFINE(mm_work, mm_callback);
+
+void send_mqtt(void)
+{
+    turn_leds_on_with_color(CYAN);
+	k_work_submit(&mm_work);
+}
 
 static void lte_handler(const struct lte_lc_evt *const evt)
 {
-	switch (evt->type)
-	{
-	case LTE_LC_EVT_NW_REG_STATUS:
-		if ((evt->nw_reg_status != LTE_LC_NW_REG_REGISTERED_HOME) &&
-			(evt->nw_reg_status != LTE_LC_NW_REG_REGISTERED_ROAMING))
-		{
-			break;
-		}
-		LOG_INF("Network registration status: %s",
-				evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_HOME ? "Connected - home network" : "Connected - roaming");
-		k_sem_give(&lte_connected);
-		break;
-	case LTE_LC_EVT_RRC_UPDATE:
-		LOG_INF("RRC mode: %s", evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED ? "Connected" : "Idle");
-		break;
-	default:
-		break;
-	}
+    switch (evt->type)
+    {
+    case LTE_LC_EVT_NW_REG_STATUS:
+        if ((evt->nw_reg_status != LTE_LC_NW_REG_REGISTERED_HOME) &&
+            (evt->nw_reg_status != LTE_LC_NW_REG_REGISTERED_ROAMING))
+        {
+            break;
+        }
+        printk("Network registration status: %s\n",
+               evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_HOME ? "Connected - home network" : "Connected - roaming");
+        k_sem_give(&lte_connected);
+        break;
+    case LTE_LC_EVT_RRC_UPDATE:
+        printk("RRC mode: %s\n", evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED ? "Connected" : "Idle");
+        break;
+    default:
+        break;
+    }
 }
 
 static void modem_configure(void)
 {
-	LOG_INF("Connecting to LTE network");
+    printk("f Connecting to LTE network\n");
 
-	int err = lte_lc_init_and_connect_async(lte_handler);
-	if (err)
-	{
-		LOG_INF("Modem could not be configured, error: %d", err);
-		return;
-	}
-	k_sem_take(&lte_connected, K_FOREVER);
-	LOG_INF("Connected to LTE network");
-	az_set_led_on(DK_LED2);
+    int err = lte_lc_init_and_connect_async(lte_handler);
+    if (err)
+    {
+        printk("Modem could not be configured, error: %d\n", err);
+        return;
+    }
+    k_sem_take(&lte_connected, K_FOREVER);
+    turn_leds_on_with_color(GREEN);
+
+    printk("Connected to LTE network\n");
 }
 
 void main(void)
 {
-	int err;
-	uint32_t connect_attempt = 0;
 
-	if (dk_leds_init() != 0)
-	{
-		LOG_ERR("Failed to initialize the LED library");
-	}
-	if (init_power() != 0)
-	{
-		LOG_ERR("Failed to initialize the power control");
-	}
-	init_adc();
-	modem_configure();
+    init_leds();
 
-	err = client_init(&client);
-	if (err)
-	{
-		LOG_ERR("Failed to initialize MQTT client: %d", err);
-		return;
-	}
-	setenv("TZ", "PST8PDT", 1);
-	struct _reent r;
-	_tzset_r(&r);
+    turn_leds_on_with_color(RED);
 
-	init_wind_sensor(&client);
+    int err;
+    uint32_t connect_attempt = 0;
+
+    // if (init_power() != 0)
+    // {
+    // 	printk("Failed to initialize the power control");
+    // }
+    // init_adc();
+    modem_configure();
+
+    err = client_init(&client);
+    if (err)
+    {
+        printk("Failed to initialize MQTT client: %d\n", err);
+        return;
+    }
+    setenv("TZ", "PST8PDT", 1);
+    struct _reent r;
+    _tzset_r(&r);
+
+    init_wind_sensor(&client);
 
 do_connect:
-	if (connect_attempt++ > 0)
-	{
-		LOG_INF("Reconnecting in %d seconds...",
-				CONFIG_MQTT_RECONNECT_DELAY_S);
-		k_sleep(K_SECONDS(CONFIG_MQTT_RECONNECT_DELAY_S));
-	}
-	err = mqtt_connect(&client);
-	if (err)
-	{
-		LOG_ERR("Error in mqtt_connect: %d", err);
-		goto do_connect;
-	}
+    if (connect_attempt++ > 0)
+    {
+        printk("Reconnecting in %d seconds...\n",
+               CONFIG_MQTT_RECONNECT_DELAY_S);
+        k_sleep(K_SECONDS(CONFIG_MQTT_RECONNECT_DELAY_S));
+    }
+    err = mqtt_connect(&client);
+    if (err)
+    {
+        printk("Error in mqtt_connect: %d\n", err);
+        goto do_connect;
+    }
 
-	err = fds_init(&client, &fds);
-	if (err)
-	{
-		LOG_ERR("Error in fds_init: %d", err);
-		return;
-	}
+    err = fds_init(&client, &fds);
+    if (err)
+    {
+        printk("Error in fds_init: %d\n", err);
+        return;
+    }
 
-	while (1)
-	{
-		err = poll(&fds, 1, mqtt_keepalive_time_left(&client));
-		if (err < 0)
-		{
-			LOG_ERR("Error in poll(): %d", errno);
-			break;
-		}
+    while (1)
+    {
+        err = poll(&fds, 1, mqtt_keepalive_time_left(&client));
+        if (err < 0)
+        {
+            printk("Error in poll(): %d\n", errno);
+            break;
+        }
 
-		err = mqtt_live(&client);
-		if ((err != 0) && (err != -EAGAIN))
-		{
-			LOG_ERR("Error in mqtt_live: %d", err);
-			break;
-		}
+        err = mqtt_live(&client);
+        if ((err != 0) && (err != -EAGAIN))
+        {
+            printk("Error in mqtt_live: %d\n", err);
+            break;
+        }
 
-		if ((fds.revents & POLLIN) == POLLIN)
-		{
-			err = mqtt_input(&client);
-			if (err != 0)
-			{
-				LOG_ERR("Error in mqtt_input: %d", err);
-				break;
-			}
-		}
+        if ((fds.revents & POLLIN) == POLLIN)
+        {
+            err = mqtt_input(&client);
+            if (err != 0)
+            {
+                printk("Error in mqtt_input: %d\n", err);
+                break;
+            }
+        }
 
-		if ((fds.revents & POLLERR) == POLLERR)
-		{
-			LOG_ERR("POLLERR");
-			break;
-		}
+        if ((fds.revents & POLLERR) == POLLERR)
+        {
+            printk("POLLERR\n");
+            break;
+        }
 
-		if ((fds.revents & POLLNVAL) == POLLNVAL)
-		{
-			LOG_ERR("POLLNVAL");
-			break;
-		}
-	}
+        if ((fds.revents & POLLNVAL) == POLLNVAL)
+        {
+            printk("POLLNVAL\n");
+            break;
+        }
+    }
 
-	LOG_INF("Disconnecting MQTT client");
+    printk("Disconnecting MQTT client\n");
 
-	err = mqtt_disconnect(&client);
-	if (err)
-	{
-		LOG_ERR("Could not disconnect MQTT client: %d", err);
-	}
-	goto do_connect;
+    err = mqtt_disconnect(&client);
+    if (err)
+    {
+        printk("Could not disconnect MQTT client: %d\n", err);
+    }
+    goto do_connect;
 }

@@ -11,10 +11,9 @@
 
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
-#include "power.h"
-#include "adc.h"
-
-LOG_MODULE_DECLARE(AnnieM);
+//#include "power.h"
+//#include "adc.h"
+#include "leds.h"
 
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
 static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
@@ -69,19 +68,16 @@ static void wind_check_callback(struct k_timer *work)
 	temp = time(NULL);
 	timeptr = localtime(&temp);
 	rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
-	//		LOG_INF("time: %s  chars: %d", buf, rc);
+	printk("time: %s  chars: %d\n", buf, rc);
 
 	if (sleepy_mode())
 	{
-		az_set_led_on(DK_LED3);
-		dk_set_led_off(DK_LED2);
-		dk_set_led_off(DK_LED1);
 		return;
 	}
-	az_set_led_on(DK_LED1);
-	dk_set_led_off(DK_LED2);
+    turn_leds_on_with_color(YELLOW);
 
-	set_boost(true);
+
+	// set_boost(true);
 	begin_wind_sample();
 }
 
@@ -112,7 +108,7 @@ static void clear_broker_history()
 								   "", 0, topic, 1);
 			if (err)
 			{
-				LOG_INF("Failed to send broker clear message, %d", err);
+				printk("Failed to send broker clear message, %d\n", err);
 				return;
 			}
 		}
@@ -123,32 +119,33 @@ static uint16_t circ_avg(uint16_t a, uint16_t b)
 {
 	int16_t diff = ((a - b + 180 + 360) % 360) - 180;
 	int16_t angle = (360 + b + (diff / 2)) % 360;
-	//	LOG_INF("avg=      %d, %d, %d, %d", a, b, diff, angle);
+	//	printk("avg=      %d, %d, %d, %d", a, b, diff, angle);
 	return angle;
 }
 
 static void check_wind_direction(struct k_timer *work)
 {
-	uint16_t voltage;
+	// uint16_t voltage;
 
-	if (get_battery_voltage(&voltage) != 0)
-	{
-		LOG_INF("Failed to get direction voltage");
-		return;
-	};
+	// if (get_battery_voltage(&voltage) != 0)
+	// {
+	// 	printk("Failed to get direction voltage\n");
+	// 	return;
+	// };
 
-	//	LOG_INF("direction voltage, %d", voltage);
-	vbuf[v_index] = (((uint32_t)voltage * 360) / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360;
+	// //	printk("direction voltage, %d\n", voltage);
+	// vbuf[v_index] = (((uint32_t)voltage * 360) / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360;
 
-	v_index = (v_index + 1) % 8;
-	wind_direction = circ_avg(
-		circ_avg(circ_avg(vbuf[0], vbuf[1]), circ_avg(vbuf[2], vbuf[3])),
-		circ_avg(circ_avg(vbuf[4], vbuf[5]), circ_avg(vbuf[6], vbuf[7])));
-	//	uint16_t avg = circ_avg(vbuf[0], vbuf[1]);
-	LOG_INF("vv= %d, %d, %d", vbuf[0], vbuf[1], wind_direction);
-	// LOG_INF("volts, v=, %d, %d", voltage, v);
+	// v_index = (v_index + 1) % 8;
+	// wind_direction = circ_avg(
+	// 	circ_avg(circ_avg(vbuf[0], vbuf[1]), circ_avg(vbuf[2], vbuf[3])),
+	// 	circ_avg(circ_avg(vbuf[4], vbuf[5]), circ_avg(vbuf[6], vbuf[7])));
+	// //	uint16_t avg = circ_avg(vbuf[0], vbuf[1]);
+	// printk("vv= %d, %d, %d\n", vbuf[0], vbuf[1], wind_direction);
+	// // printk("volts, v=, %d, %d\n", voltage, v);
 }
 
+// background task that sends the MQTT sensor data
 static void speed_calc_callback(struct k_work *timer_id)
 {
 	time_t now;
@@ -156,7 +153,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 	struct tm tm;
 	localtime_r(&now, &tm);
 
-	clear_broker_history();
+//	clear_broker_history();
 
 	int hour = tm.tm_hour;
 	int minute = tm.tm_min;
@@ -182,7 +179,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 	wind_sensor[minute / 5].direction = wind_direction;
 
 	build_array_string(wmsg, &tm);
-	//	LOG_INF("h %d m:%d   %s", hour, minute, wmsg);
+		printk("h %d m:%d   %s\n", hour, minute, wmsg);
 	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
 	// sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
 
@@ -192,48 +189,50 @@ static void speed_calc_callback(struct k_work *timer_id)
 					   wmsg, strlen(wmsg), topic, 1);
 	if (err)
 	{
-		LOG_INF("Failed to send message, %d", err);
+		printk("Failed to send message, %d\n", err);
 		return;
 	}
 
-	report_power(wmsg);
-	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
+	// report_power(wmsg);
+	// sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
 
-	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-					   wmsg, strlen(wmsg), topic, 1);
-	if (err)
-	{
-		LOG_INF("Failed to send pwr message, %d", err);
-		return;
-	}
+	// err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+	// 				   wmsg, strlen(wmsg), topic, 1);
+	// if (err)
+	// {
+	// 	printk("Failed to send pwr message, %d\n", err);
+	// 	return;
+	// }
 
-	sprintf(topic, "%s/recent", CONFIG_MQTT_PRIMARY_TOPIC);
-	sprintf(wmsg, "{\"time\":\"%2d/%2d %2d:%02d\",\"sp\":\"%d\",\"dir\":\"%d\",\"mv\":\"%d\"}",
-		tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, speed, wind_direction, get_volts());
-	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-					   wmsg, strlen(wmsg), topic, 1);
-	if (err)
-	{
-		LOG_INF("Failed to send pwr message, %d", err);
-		return;
-	}
+	// sprintf(topic, "%s/recent", CONFIG_MQTT_PRIMARY_TOPIC);
+	// sprintf(wmsg, "{\"time\":\"%2d/%2d %2d:%02d\",\"sp\":\"%d\",\"dir\":\"%d\",\"mv\":\"%d\"}",
+	// 	tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, speed, wind_direction, get_volts());
+	// err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+	// 				   wmsg, strlen(wmsg), topic, 1);
+	// if (err)
+	// {
+	// 	printk("Failed to send pwr message, %d\n", err);
+	// 	return;
+	// }
 }
 
-
+// Calculates the wind speed from the number of pulses, 
+// then submit a job to send the MQTT data
 void frequency_counter(struct k_timer *work)
 {
 	float f = frequency / 6.0 * WIND_SCALE;
 	speed = (int)f;
-	LOG_INF("Windspeed %d ...", speed);
+	printk("Windspeed %d ...\n", speed);
 	frequency = 0;
-	az_set_led_on(DK_LED2);
-	dk_set_led_off(DK_LED1);
-	set_boost(false);
+//	az_set_led_on(DK_LED2);
+//	dk_set_led_off(DK_LED1);
+	// set_boost(false);
 
 	k_work_submit(&repeating_timer_work);
 }
 
-
+// ISR called on each pulse from the speed sensor, counts the number of pulses in
+// the timer period
 void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
 	int64_t time = k_uptime_get();
@@ -242,9 +241,11 @@ void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint3
 		frequency++;
 	}
 	lasttime = time;
+	turn_leds_on_with_color(CYAN);
+
 }
 
-
+// Starts timers for doing the speed and direction sense
 void begin_wind_sample()
 {
 	frequency = 0;
@@ -267,13 +268,10 @@ int init_wind_sensor(struct mqtt_client *c)
 	{
 		return err;
 	}
-	/* STEP 3 - Configure the interrupt on the button's pin */
 	err = gpio_pin_interrupt_configure_dt(&windspeed, GPIO_INT_EDGE_TO_ACTIVE);
 
-	/* STEP 6 - Initialize the static struct gpio_callback variable   */
 	gpio_init_callback(&windspeed_cb_data, windspeed_handler, BIT(windspeed.pin));
 
-	/* STEP 7 - Add the callback function by calling gpio_add_callback()   */
 	gpio_add_callback(windspeed.port, &windspeed_cb_data);
 
 	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60 * 5));

@@ -1,20 +1,15 @@
 #
-# Copyright (c) 2018 Nordic Semiconductor ASA
+# Copyright (c) 2019-2022 Actinius
 #
-# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+# SPDX-License-Identifier: BSD-3-Clause
 #
 
-cmake_minimum_required(VERSION 3.20.0)
+cmake_minimum_required(VERSION 3.8.2)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(cellular_fundamentals)
+project(iss_position)
 
-# NORDIC SDK APP START
-target_sources(app PRIVATE src/adc.c)
-target_sources(app PRIVATE src/temperature.c)
-target_sources(app PRIVATE src/power.c)
+target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE src/leds.c)
 target_sources(app PRIVATE src/wind_sensor.c)
 target_sources(app PRIVATE src/mqtt_connection.c)
-target_sources(app PRIVATE src/main.c)
-
-# NORDIC SDK APP END
