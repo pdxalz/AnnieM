@@ -17,6 +17,8 @@
 #include "wind_sensor.h"
 
 #include "leds.h"
+#include "adc.h"
+
 extern int setenv(const char *name, const char *value, int overwrite);
 
 /* The mqtt client struct */
@@ -93,7 +95,7 @@ void main(void)
 
     init_leds();
 
-    turn_leds_on_with_color(RED);
+    turn_leds_on_with_color(YELLOW);
 
     int err;
     uint32_t connect_attempt = 0;
@@ -102,8 +104,27 @@ void main(void)
     // {
     // 	printk("Failed to initialize the power control");
     // }
-    // init_adc();
+    init_adc();
+
+    // printk("2 ADC testing...\n");
+ 	// while (1) {
+	// 	uint16_t battery_voltage = 0;
+	// 	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &battery_voltage);
+	// 	printk("Battery voltage: %u mV\n", battery_voltage);
+
+	// 	get_adc_voltage(ADC_WIND_DIR_ID, &battery_voltage);
+	// 	printk("Direction voltage: %u mV\n", battery_voltage);
+
+	// 	k_sleep(K_MSEC(2000));
+	// }
+
+
+
+
+
     modem_configure();
+
+    turn_leds_on_with_color(RED);
 
     err = client_init(&client);
     if (err)

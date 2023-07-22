@@ -98,7 +98,7 @@ static int subscribe(struct mqtt_client *const c)
 		.list = &subscribe_topic,
 		.list_count = 1,
 		.message_id = 1234};
-	printk("Subscribing to: %s len %u", CONFIG_MQTT_CMD_TOPIC,
+	printk("Subscribing to: %s len %u\n", CONFIG_MQTT_CMD_TOPIC,
 			(unsigned int)strlen(CONFIG_MQTT_CMD_TOPIC));
 	return mqtt_subscribe(c, &subscription_list);
 }
@@ -130,7 +130,7 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 	param.dup_flag = 0;
 	param.retain_flag = retain;
 	data_print("Publishing: ", data, len);
-	printk("to topic: %s len: %u", topic, (unsigned int)strlen(topic));
+	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
 	return mqtt_publish(c, &param);
 }
 
@@ -146,15 +146,15 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 	case MQTT_EVT_CONNACK:
 		if (evt->result != 0)
 		{
-			printk("MQTT connect failed: %d", evt->result);
+			printk("MQTT connect failed: %d\n", evt->result);
 			break;
 		}
-		printk("MQTT client connected");
+		printk("MQTT client connected\n");
 		subscribe(c);
 		break;
 
 	case MQTT_EVT_DISCONNECT:
-		printk("MQTT client disconnected: %d", evt->result);
+		printk("MQTT client disconnected: %d\n", evt->result);
 		break;
 
 	case MQTT_EVT_PUBLISH:
@@ -163,7 +163,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 			/* STEP 6.1 - Extract the payload */
 			const struct mqtt_publish_param *p = &evt->param.publish;
 			// Print the length of the recived message
-			printk("MQTT PUBLISH result=%d len=%d", evt->result, p->message.payload.len);
+			printk("MQTT PUBLISH result=%d len=%d\n", evt->result, p->message.payload.len);
 			// Extract the data of the recived message
 			err = get_received_payload(c, p->message.payload.len);
 			// Send acknowledgment to the broker on receiving QoS1 publish message
@@ -228,18 +228,18 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 			// On failed extraction of data - Payload buffer is smaller than the recived data . Increase
 			else if (err == -EMSGSIZE)
 			{
-				printk("Received payload (%d bytes) is larger than the payload buffer size (%d bytes).",
+				printk("Received payload (%d bytes) is larger than the payload buffer size (%d bytes).\n",
 						p->message.payload.len, sizeof(payload_buf));
 				// On failed extraction of data - Failed to extract data, disconnect
 			}
 			else
 			{
-				printk("get_received_payload failed: %d", err);
-				printk("Disconnecting MQTT client...");
+				printk("get_received_payload failed: %d\n", err);
+				printk("Disconnecting MQTT client...\n");
 				err = mqtt_disconnect(c);
 				if (err)
 				{
-					printk("Could not disconnect: %d", err);
+					printk("Could not disconnect: %d\n", err);
 				}
 			}
 		}
@@ -248,32 +248,32 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 	case MQTT_EVT_PUBACK:
 		if (evt->result != 0)
 		{
-			printk("MQTT PUBACK error: %d", evt->result);
+			printk("MQTT PUBACK error: %d\n", evt->result);
 			break;
 		}
 
-//		printk("PUBACK packet id: %u", evt->param.puback.message_id);
+//		printk("PUBACK packet id: %u\n", evt->param.puback.message_id);
 		break;
 
 	case MQTT_EVT_SUBACK:
 		if (evt->result != 0)
 		{
-			printk("MQTT SUBACK error: %d", evt->result);
+			printk("MQTT SUBACK error: %d\n", evt->result);
 			break;
 		}
 
-		printk("SUBACK packet id: %u", evt->param.suback.message_id);
+		printk("SUBACK packet id: %u\n", evt->param.suback.message_id);
 		break;
 
 	case MQTT_EVT_PINGRESP:
 		if (evt->result != 0)
 		{
-			printk("MQTT PINGRESP error: %d", evt->result);
+			printk("MQTT PINGRESP error: %d\n", evt->result);
 		}
 		break;
 
 	default:
-		printk("Unhandled MQTT event type: %d", evt->type);
+		printk("Unhandled MQTT event type: %d\n", evt->type);
 		break;
 	}
 }
@@ -293,7 +293,7 @@ static int broker_init(void)
 	err = getaddrinfo(CONFIG_MQTT_BROKER_HOSTNAME, NULL, &hints, &result);
 	if (err)
 	{
-		printk("getaddrinfo failed: %d", err);
+		printk("getaddrinfo failed: %d\n", err);
 		return -ECHILD;
 	}
 
@@ -317,13 +317,13 @@ static int broker_init(void)
 
 			inet_ntop(AF_INET, &broker4->sin_addr.s_addr,
 					  ipv4_addr, sizeof(ipv4_addr));
-			printk("IPv4 Address found %s", (char *)(ipv4_addr));
+			printk("IPv4 Address found %s\n", (char *)(ipv4_addr));
 
 			break;
 		}
 		else
 		{
-			printk("ai_addrlen = %u should be %u or %u",
+			printk("ai_addrlen = %u should be %u or %u\n",
 					(unsigned int)addr->ai_addrlen,
 					(unsigned int)sizeof(struct sockaddr_in),
 					(unsigned int)sizeof(struct sockaddr_in6));
@@ -357,7 +357,7 @@ static const uint8_t *client_id_get(void)
 	err = nrf_modem_at_cmd(imei_buf, sizeof(imei_buf), "AT+CGSN");
 	if (err)
 	{
-		printk("Failed to obtain IMEI, error: %d", err);
+		printk("Failed to obtain IMEI, error: %d\n", err);
 		goto exit;
 	}
 
@@ -383,7 +383,7 @@ int client_init(struct mqtt_client *client)
 	err = broker_init();
 	if (err)
 	{
-		printk("Failed to initialize broker connection");
+		printk("Failed to initialize broker connection\n");
 		return err;
 	}
 	/* MQTT client configuration */

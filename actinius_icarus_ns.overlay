@@ -14,10 +14,17 @@
     wind_speed {
         compatible = "gpio-keys";
         windspeed0: wind_speed_0 {
-            gpios = <&gpio0 4 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            gpios = <&gpio0 15 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
         };
     };
 
+	vbatt {
+		compatible = "voltage-divider";
+		io-channels = <&adc 0>, <&adc 1>;
+		output-ohms = <10000000>;
+		full-ohms = <(10000000 + 4700000)>;
+	};
+        
     aliases {
 		windspeed0 = &windspeed0;
     };
