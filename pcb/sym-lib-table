@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "AnnieM-rescue")(type "KiCad")(uri "${KIPRJMOD}/AnnieM-rescue.kicad_sym")(options "")(descr ""))
+)
