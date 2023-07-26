@@ -97,6 +97,7 @@ static void clear_broker_history()
 	// clear the broker data first time after power up
 	if (!broker_cleared)
 	{
+		printk("clearing broker history\n");
 		broker_cleared = true;
 		for (int i = 0; i < 24; ++i)
 		{
@@ -145,38 +146,6 @@ static void check_wind_direction(struct k_timer *work)
 
 #define NUM_PWR 12
 
-int n_pwr = NUM_PWR - 1;
-uint16_t volts[NUM_PWR];
-uint16_t temperature[NUM_PWR];
-uint16_t current_volts;
-
-#define NUM_PWR 12
-
-void report_power(uint8_t *buf)
-{
-	double temp;
-
-	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &volts[n_pwr]);
-	current_volts = volts[n_pwr];
-
-	// if (get_temperature(&temp))
-	// {
-
-	// 	LOG_ERR("temperature failed");
-	// 	return;
-	// }
-	temperature[n_pwr] = 0; // temp * 9.0 / 5.0 + 32.0;
-	buf += sprintf(buf, "{\"pwr\":[");
-
-	for (int i = n_pwr; i < NUM_PWR + n_pwr; ++i)
-	{
-		buf += sprintf(buf, "[%d, %d],", volts[i % NUM_PWR], temperature[i % NUM_PWR]);
-	}
-	--buf; // remove the last comma
-	sprintf(buf, "]}");
-
-	n_pwr = (n_pwr - 1 + NUM_PWR) % NUM_PWR;
-}
 
 // background task that sends the MQTT sensor data
 static void speed_calc_callback(struct k_work *timer_id)
@@ -186,7 +155,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 	struct tm tm;
 	localtime_r(&now, &tm);
 
-	// zz	clear_broker_history();
+	clear_broker_history();
 
 	int hour = tm.tm_hour;
 	int minute = tm.tm_min;
@@ -212,7 +181,6 @@ static void speed_calc_callback(struct k_work *timer_id)
 	wind_sensor[minute / 5].direction = wind_direction;
 
 	build_array_string(wmsg, &tm);
-	printk("h %d m:%d   %s\n", hour, minute, wmsg);
 	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
 	// sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
 
@@ -226,20 +194,13 @@ static void speed_calc_callback(struct k_work *timer_id)
 		return;
 	}
 
-	report_power(wmsg);
-	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
+	 uint16_t current_volts;
 
-	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-					   wmsg, strlen(wmsg), topic, 1);
-	if (err)
-	{
-		printk("Failed to send pwr message, %d\n", err);
-		return;
-	}
+	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &current_volts);
 
 	sprintf(topic, "%s/recent", CONFIG_MQTT_PRIMARY_TOPIC);
 	sprintf(wmsg, "{\"time\":\"%2d/%2d %2d:%02d\",\"sp\":\"%d\",\"dir\":\"%d\",\"mv\":\"%d\"}",
-			tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, speed, wind_direction, current_volts);
+			tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, speed, wind_direction, current_volts);
 	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
 					   wmsg, strlen(wmsg), topic, 1);
 	if (err)

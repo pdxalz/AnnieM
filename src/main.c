@@ -18,6 +18,7 @@
 
 #include "leds.h"
 #include "adc.h"
+#include "health.h"
 
 extern int setenv(const char *name, const char *value, int overwrite);
 
@@ -76,7 +77,7 @@ static void lte_handler(const struct lte_lc_evt *const evt)
 
 static void modem_configure(void)
 {
-    printk("f Connecting to LTE network\n");
+    printk("Connecting to LTE network\n");
 
     int err = lte_lc_init_and_connect_async(lte_handler);
     if (err)
@@ -137,6 +138,7 @@ void main(void)
     _tzset_r(&r);
 
     init_wind_sensor(&client);
+    init_health(&client);
 
 do_connect:
     if (connect_attempt++ > 0)
