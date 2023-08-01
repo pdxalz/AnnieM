@@ -111,10 +111,14 @@ void main(void)
  	// while (1) {
 	// 	uint16_t battery_voltage = 0;
 	// 	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &battery_voltage);
-	// 	printk("Battery voltage: %u mV\n", battery_voltage);
+	// 	printk("Battery voltage: %u mV  %u\n", battery_voltage, get_battery_voltage());
+
 
 	// 	get_adc_voltage(ADC_WIND_DIR_ID, &battery_voltage);
 	// 	printk("Direction voltage: %u mV\n", battery_voltage);
+
+	// 	get_adc_voltage(ADC_TEMPERATURE_ID, &battery_voltage);
+	// 	printk("Temp voltage: %u mV  %d\n", battery_voltage, get_temperature());
 
 	// 	k_sleep(K_MSEC(2000));
 	// }

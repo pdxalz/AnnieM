@@ -27,9 +27,6 @@ uint16_t volts[NUM_PWR];
 uint16_t temperature[NUM_PWR];
 static uint16_t current_volts;
 
-
-
-
 static void health_timer_callback(struct k_timer *work)
 {
 	int rc;
@@ -39,7 +36,7 @@ static void health_timer_callback(struct k_timer *work)
 	temp = time(NULL);
 	timeptr = localtime(&temp);
 	rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
-//	printk("health timer: %s  chars: %d\n", buf, rc);
+	//	printk("health timer: %s  chars: %d\n", buf, rc);
 
 	turn_leds_on_with_color(CYAN);
 	k_work_submit(&health_worker);
@@ -47,8 +44,9 @@ static void health_timer_callback(struct k_timer *work)
 
 void report_power(uint8_t *buf)
 {
-	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &volts[n_pwr]);
-	current_volts = volts[n_pwr];
+//	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &volts[n_pwr]);
+	current_volts = get_battery_voltage();
+	volts[n_pwr] = current_volts;
 
 	// if (get_temperature(&temp))
 	// {
@@ -56,7 +54,7 @@ void report_power(uint8_t *buf)
 	// 	LOG_ERR("temperature failed");
 	// 	return;
 	// }
-	temperature[n_pwr] = 42; // temp * 9.0 / 5.0 + 32.0;
+	temperature[n_pwr] = get_temperature();
 	buf += sprintf(buf, "{\"pwr\":[");
 
 	for (int i = n_pwr; i < NUM_PWR + n_pwr; ++i)
@@ -80,7 +78,7 @@ static void health_worker_callback(struct k_work *timer_id)
 	int hour = tm.tm_hour;
 	int minute = tm.tm_min;
 
-//	printk("health worker\n");
+	//	printk("health worker\n");
 
 	report_power(wmsg);
 	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
@@ -94,10 +92,48 @@ static void health_worker_callback(struct k_work *timer_id)
 	}
 }
 
-void init_health(struct mqtt_client *c)
+// function to convert F to C
+int FahrenheitToCelsius(float FahrenTemp)
 {
-//	printk("health init\n");
-	_pclient = c;
-    k_timer_start(&health_timer, K_SECONDS(60), K_MINUTES(60));
+	return (FahrenTemp - 32) * 5 / 9;
 }
 
+
+#define BATVOLT_R1 4.7f
+#define BATVOLT_R2 10.0f
+
+int get_battery_voltage()
+{
+	uint16_t volts;
+	int corrected;
+
+	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &volts);
+	corrected = (volts * ((BATVOLT_R1 + BATVOLT_R2) / BATVOLT_R2));
+	printk("battery %d  %d\n",  volts, corrected);
+	return corrected;
+}
+
+int get_temperature()
+{
+	const int T1 = 0;	 // low C temp
+	const int T2 = 50;	 // high C temp
+	const int V1 = 2100; // low voltage
+	const int V2 = 1558; // high voltage
+	int temperature;
+
+	uint16_t volts;
+
+	get_adc_voltage(ADC_TEMPERATURE_ID, &volts);
+
+	temperature = T1 + (volts - V1) * (T2 - T1) / (V2 - V1); // conversion
+	temperature = (temperature * 9.0 / 5.0) + 32;			 // F conversion
+	printk("temperature=%d volts=%d\n", temperature, volts);
+	return temperature;
+}
+
+void init_health(struct mqtt_client *c)
+{
+	//	printk("health init\n");
+	_pclient = c;
+	k_timer_start(&health_timer, K_SECONDS(60), K_MINUTES(60));
+}

@@ -4,6 +4,7 @@
 // ADC Channel IDs
 #define ADC_BATTERY_VOLTAGE_ID 0
 #define ADC_WIND_DIR_ID 1
+#define ADC_TEMPERATURE_ID 2
 
 /**
  * @brief Take a temperature sample.
@@ -15,6 +16,7 @@
  * @return int - 0 on success, otherwise, negative error code.
  */
 int get_adc_voltage(uint8_t channel, uint16_t *battery_voltage);
+int get_temperature();
 bool init_adc();
 
 #endif /* _ADC_H_ */

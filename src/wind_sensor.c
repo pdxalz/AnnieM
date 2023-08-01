@@ -11,18 +11,20 @@
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
 #include "adc.h"
+#include "health.h"
 #include "leds.h"
 
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
 static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
 
 #define WIND_SCALE (102.0 / 60.0)
-#define MAX_DIRECTION_VOLTAGE 2350
-#define NORTH_OFFSET 90   // Aim to the east so discontinuity is not at north
+#define MAX_DIRECTION_VOLTAGE 1630
+#define NORTH_OFFSET 90 // Aim to the east so discontinuity is not at north
 
 static volatile int frequency = 0;
 static volatile int64_t lasttime = 0;
 static int speed;
+static int oldspeed = 0;
 static bool broker_cleared = false;
 static uint16_t wind_direction;
 
@@ -65,7 +67,7 @@ static void wind_check_callback(struct k_timer *work)
 	temp = time(NULL);
 	timeptr = localtime(&temp);
 	rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
-	printk("time: %s  chars: %d\n", buf, rc);
+	//	printk("time: %s  chars: %d\n", buf, rc);
 
 	if (sleepy_mode())
 	{
@@ -132,20 +134,18 @@ static void check_wind_direction(struct k_timer *work)
 		return;
 	};
 
-//	printk("direction voltage, %d\n", voltage);
+	//	printk("direction voltage, %d\n", voltage);
 	vbuf[v_index] = (((uint32_t)voltage * 360) / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360;
 
 	v_index = (v_index + 1) % 8;
 	wind_direction = circ_avg(
 		circ_avg(circ_avg(vbuf[0], vbuf[1]), circ_avg(vbuf[2], vbuf[3])),
 		circ_avg(circ_avg(vbuf[4], vbuf[5]), circ_avg(vbuf[6], vbuf[7])));
-	//	uint16_t avg = circ_avg(vbuf[0], vbuf[1]);
-	// printk("vv= %d, %d, %d\n", vbuf[0], vbuf[1], wind_direction);
-	// printk("volts, v=, %d, %d\n", voltage, v);
+
+	printk("dir volts %d  dir %d\n", voltage, wind_direction);
 }
 
 #define NUM_PWR 12
-
 
 // background task that sends the MQTT sensor data
 static void speed_calc_callback(struct k_work *timer_id)
@@ -184,29 +184,38 @@ static void speed_calc_callback(struct k_work *timer_id)
 	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
 	// sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
 
-	int err;
-
-	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-					   wmsg, strlen(wmsg), topic, 1);
-	if (err)
+	// always publish data just before the next hour, or
+	// publish only if the time is between 10AM and 9PM and
+	// the speed changed or is higher than 2
+	if ((minute / 5 == 11) ||
+		(hour > 9 && hour < 21 && (speed > 2 || speed != oldspeed)))
 	{
-		printk("Failed to send message, %d\n", err);
-		return;
-	}
 
-	 uint16_t current_volts;
+		int err;
+		oldspeed = speed;
+		err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+						   wmsg, strlen(wmsg), topic, 1);
+		if (err)
+		{
+			printk("Failed to send message, %d\n", err);
+			return;
+		}
 
-	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &current_volts);
+		uint16_t current_volts;
 
-	sprintf(topic, "%s/recent", CONFIG_MQTT_PRIMARY_TOPIC);
-	sprintf(wmsg, "{\"time\":\"%2d/%2d %2d:%02d\",\"sp\":\"%d\",\"dir\":\"%d\",\"mv\":\"%d\"}",
-			tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, speed, wind_direction, current_volts);
-	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-					   wmsg, strlen(wmsg), topic, 1);
-	if (err)
-	{
-		printk("Failed to send pwr message, %d\n", err);
-		return;
+		//	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &current_volts);
+		current_volts = get_battery_voltage();
+
+		sprintf(topic, "%s/recent", CONFIG_MQTT_PRIMARY_TOPIC);
+		sprintf(wmsg, "{\"time\":\"%2d/%2d %2d:%02d\",\"sp\":\"%d\",\"dir\":\"%d\",\"mv\":\"%d\"}",
+				tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, speed, wind_direction, current_volts);
+		err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+						   wmsg, strlen(wmsg), topic, 1);
+		if (err)
+		{
+			printk("Failed to send pwr message, %d\n", err);
+			return;
+		}
 	}
 }
 

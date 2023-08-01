@@ -3,7 +3,7 @@
 
 #define BATVOLT_R1 4.7f			 // MOhm
 #define BATVOLT_R2 10.0f		 // MOhm
-#define INPUT_VOLT_RANGE 3.6f	 // Volts
+#define INPUT_VOLT_RANGE 3.67f	 // Volts
 #define VALUE_RANGE_10_BIT 1.023 // (2^10 - 1) / 1000
 
 #define ADC_NODE DT_NODELABEL(adc)
@@ -14,6 +14,7 @@
 #define ADC_ACQUISITION_TIME ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 10)
 #define ADC_1ST_CHANNEL_INPUT SAADC_CH_PSELP_PSELP_AnalogInput0
 #define ADC_2ND_CHANNEL_INPUT SAADC_CH_PSELP_PSELP_AnalogInput1
+#define ADC_3RD_CHANNEL_INPUT SAADC_CH_PSELP_PSELP_AnalogInput2
 
 #define BUFFER_SIZE 1
 static int16_t m_sample_buffer[BUFFER_SIZE];
@@ -34,6 +35,14 @@ static const struct adc_channel_cfg m_2nd_channel_cfg = {
 	.acquisition_time = ADC_ACQUISITION_TIME,
 	.channel_id = ADC_WIND_DIR_ID,
 	.input_positive = ADC_2ND_CHANNEL_INPUT,
+};
+
+static const struct adc_channel_cfg m_3rd_channel_cfg = {
+	.gain = ADC_GAIN,
+	.reference = ADC_REFERENCE,
+	.acquisition_time = ADC_ACQUISITION_TIME,
+	.channel_id = ADC_TEMPERATURE_ID,
+	.input_positive = ADC_3RD_CHANNEL_INPUT,
 };
 
 int get_adc_voltage(uint8_t channel, uint16_t *battery_voltage)
@@ -67,8 +76,8 @@ int get_adc_voltage(uint8_t channel, uint16_t *battery_voltage)
 	}
 //	printk("   buf: %d\n", m_sample_buffer[0] );
 	sample_value /= BUFFER_SIZE;
-
-	*battery_voltage = (uint16_t)(sample_value * (INPUT_VOLT_RANGE / VALUE_RANGE_10_BIT) * ((BATVOLT_R1 + BATVOLT_R2) / BATVOLT_R2));
+	*battery_voltage = (uint16_t)(sample_value * (INPUT_VOLT_RANGE / VALUE_RANGE_10_BIT));
+//	*battery_voltage = (uint16_t)(sample_value * (INPUT_VOLT_RANGE / VALUE_RANGE_10_BIT) * ((BATVOLT_R1 + BATVOLT_R2) / BATVOLT_R2));
 
 	return 0;
 }
@@ -94,6 +103,14 @@ bool init_adc()
 	}
 
 	err = adc_channel_setup(adc_dev, &m_2nd_channel_cfg);
+	if (err)
+	{
+		printk("Error in adc setup: %d\n", err);
+
+		return false;
+	}
+
+	err = adc_channel_setup(adc_dev, &m_3rd_channel_cfg);
 	if (err)
 	{
 		printk("Error in adc setup: %d\n", err);
