@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 
 <head>
     <title>Sauvie Wind Data</title>
@@ -12,6 +13,8 @@
         var host = "test.mosquitto.org";//change this
         var port = 8081;
         var row_ctr = 1;
+        var xyValues = [];
+        var chart;
 
         function onFailure(message) {
             console.log("Connection Attempt to Host " + host + "Failed");
@@ -134,9 +137,12 @@
 
                     cell1.innerHTML = time + ":" + time_dict[i];
                     cell2.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + wind_json.wind[i][0];
-                    cell3.innerHTML =  directionString(wind_json.wind[i][1]);
+                    cell3.innerHTML = directionString(wind_json.wind[i][1]);
+
+                    xyValues.push({ x: time * 12 + i, y: wind_json.wind[i][0] });
                 }
             }
+            chart.update();
         }
 
         function showWind(wind_data) {
@@ -183,12 +189,14 @@
 </head>
 
 <body>
-    <h1>The wind sensor died in the line of duty :-( It needs new parts and will take a couple weeks to get it running.</h1>
+    <h1>The wind sensor is running again. Hopefully we'll be able to leave it over night soon.
+    </h1>
     <h1>Sauvie Island Wind Conditions</h1>
     <p> "The wind sensor and website are still in development.
         The sensor is only active when we are on the island to set it up.
         "</p>
     <!--        <h3>Current Speed/Direction:</h3> -->
+    <canvas id="myChart" style="width:100%;max-width:700px"></canvas>
     <p id="recent-wind"></p>
     <table id="wind-table">
         <tr>
@@ -199,6 +207,25 @@
     </table>
     <script>
         MQTTconnect();
+
+
+        chart = new Chart("myChart", {
+            type: "line",
+            data: {
+                datasets: [{
+                    pointRadius: 2,
+                    pointBackgroundColor: "rgb(0,0,255)",
+                    data: xyValues
+                }]
+            },
+            options: {
+                legend: { display: false },
+                scales: {
+                    xAxes: [{ ticks: { min: 40, max: 290 } }],
+                    yAxes: [{ ticks: { min: 0, max: 32 } }],
+                }
+            }
+        });
     </script>
 </body>
 
