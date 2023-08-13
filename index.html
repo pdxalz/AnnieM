@@ -13,7 +13,8 @@
         var host = "test.mosquitto.org";//change this
         var port = 8081;
         var row_ctr = 1;
-        var xyValues = [];
+        var xValues = [];
+        var yValues = [];
         var chart;
 
         function onFailure(message) {
@@ -134,15 +135,19 @@
                     var cell3 = row.insertCell(2);
                     var time = wind_json.time.slice(11, 13);
                     console.log("time:" + time);
-
                     cell1.innerHTML = time + ":" + time_dict[i];
                     cell2.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + wind_json.wind[i][0];
                     cell3.innerHTML = directionString(wind_json.wind[i][1]);
 
-                    xyValues.push({ x: time * 12 + i, y: wind_json.wind[i][0] });
+                    var pos = time.search(/ /);
+                    var hour = time.substring(pos+1, pos+3);
+                   xValues.push(i==0?hour:"  ");
+                    yValues.push(wind_json.wind[i][0]);
+ //                   console.log("data:" + xValues);
+
                 }
             }
-            chart.update();
+             chart.update();
         }
 
         function showWind(wind_data) {
@@ -212,10 +217,11 @@
         chart = new Chart("myChart", {
             type: "line",
             data: {
+                labels: xValues,
                 datasets: [{
-                    pointRadius: 2,
+                    pointRadius: 1,
                     pointBackgroundColor: "rgb(0,0,255)",
-                    data: xyValues
+                    data: yValues
                 }]
             },
             options: {
