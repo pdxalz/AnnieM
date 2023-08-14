@@ -129,8 +129,8 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 	param.message_id = sys_rand32_get();
 	param.dup_flag = 0;
 	param.retain_flag = retain;
-	data_print("Publishing: ", data, len);
-	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
+//	data_print("Publishing: ", data, len);
+//	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
 	return mqtt_publish(c, &param);
 }
 

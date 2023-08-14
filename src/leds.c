@@ -23,13 +23,13 @@ static struct gpio_dt_spec blue_led = GPIO_DT_SPEC_GET(BLUE_LED_NODE, gpios);
 
 static bool button_pressed = false;
 
-extern void send_mqtt(void);
+
 
 void button_pressed_callback(const struct device *gpiob, struct gpio_callback *cb, gpio_port_pins_t pins)
 {
     button_pressed = true;
     
-   send_mqtt();
+
 
 }
 

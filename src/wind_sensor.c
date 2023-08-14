@@ -186,9 +186,9 @@ static void speed_calc_callback(struct k_work *timer_id)
 
 	// always publish data just before the next hour, or
 	// publish only if the time is between 10AM and 9PM and
-	// the speed changed or is higher than 2
+	// the speed is higher than 5
 	if ((minute / 5 == 11) ||
-		(hour > 9 && hour < 21 && (speed > 2 || speed != oldspeed)))
+		(hour > 9 && hour < 21 && (speed > 5)))
 	{
 
 		int err;
