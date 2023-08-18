@@ -77,7 +77,7 @@
             wind_table.innerHTML =
 
                 "<h2>" + " Current conditions at " + recent_json.time + "<br>" + " speed: " + recent_json.sp +
-                " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + "</h2>"  +
+                " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + "</h2>" +
                 " battery: " + recent_json.mv;
             recent_json.mv;
 
@@ -101,6 +101,9 @@
             if (time > latestTime) {
                 latestTime = time;
             }
+            else {
+                return;
+            }
             console.log("timestamp: " + wind_json.time + "   latest: ", latestTime);
 
             var hour = time.getHours();
@@ -118,22 +121,45 @@
             var x = [];
             var y = [];
             var hour = latestTime.getHours();
+            var i;
+            // i = hour - 2;
+            // if (hour > 10) {
+            //     i = hour - 1;
+            //     for (var j = 0; j < windData[i].length; ++j) {
+            //         x.push(j == 0 ? i + 1 : "");
+            //         y.push(windData[i][j][0]);
+            //     }
 
-            var start = (hour < 8) ? 0 : hour - 6;
-            for (var i = start; i < hour; ++i) {
-                if (windData[i] !== undefined) {
-                    console.log("aa:", i, hour, windData[i]);
-                    for (var j = 0; j < windData[i].length; ++j) {
-                        x.push(j == 0 ? i + 1 : "");
-                        y.push(windData[i][j][0]);
-                    }
-
+            // }
+            i = hour - 1;
+            if (hour > 10) {
+                i = hour - 1;
+                for (var j = 0; j < windData[i].length; ++j) {
+                    x.push(j == 0 ? i + 1 : "");
+                    y.push(windData[i][j][0]);
                 }
+
             }
+            i = hour;
+            for (var j = 0; j < windData[i].length; ++j) {
+                x.push(j == 0 ? i + 1 : "");
+                y.push(windData[i][j][0]);
+            }
+            console.log("y:" + y);
+            // var start = (hour < 8) ? 0 : hour - 6;
+            // for (var i = 0; i < hour; ++i) {
+            //     if (windData[i] !== undefined) {
+            //         for (var j = 0; j < windData[i].length; ++j) {
+            //             x.push(j == 0 ? i + 1 : "");
+            //             y.push(windData[i][j][0]);
+            //         }
+
+            //     }
+            // }
 
             chart.data.datasets[0].data = y;
             chart.data.labels = x;
-
+            console.log(windData[hour]);
             console.log("speed:", hour);
             chart.update();
         }
@@ -183,7 +209,8 @@
 
 <body>
     <h1>Sauvie Island Wind Conditions</h1>
-    <p> The wind sensor is mostly working now.  Hopefully it will keep working. There are a few issues with the graphing.</p>
+    <p> The wind sensor is mostly working now. Hopefully it will keep working. There are a few issues with the graphing.
+    </p>
     <p> Updates occur every 5 minute from 10AM to 9PM if it is windy. Otherwise only on the hour.</p>
     <!--        <h3>Current Speed/Direction:</h3> -->
     <p id="recent-wind"></p>
