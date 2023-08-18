@@ -16,6 +16,8 @@
         var xValues = [];
         var yValues = [];
         var chart;
+        var windData = [];
+        var latestTime = new Date(0);
 
         function onFailure(message) {
             console.log("Connection Attempt to Host " + host + "Failed");
@@ -39,7 +41,9 @@
             if (msg.destinationName.search("recent") >= 0) {
                 addDataToRecent(wind_data);
             } else {
-                addDataToTable2(wind_data);
+                addNewWindData(wind_data);
+                //      addDataToTable2(wind_data);
+                //  addDataToTable3();
             }
         }
 
@@ -75,9 +79,9 @@
 
 
             wind_table.innerHTML =
-                recent_json.time + "<br>" +
-                "<h2>" + " wind speed: " + recent_json.sp + "<br>" +
-                " wind dir: " + recent_json.dir + " " + directionString(recent_json.dir) + "</h2>" + "<br>" +
+                 
+                "<h2>" + " Current conditions at " + recent_json.time + "<br>" + " speed: " + recent_json.sp + 
+                " Direction: " +  directionString(recent_json.dir) + "(" + recent_json.dir +")" + "</h2>" + "<br>" +
                 " battery: " + recent_json.mv;
             recent_json.mv;
 
@@ -140,14 +144,140 @@
                     cell3.innerHTML = directionString(wind_json.wind[i][1]);
 
                     var pos = time.search(/ /);
-                    var hour = time.substring(pos+1, pos+3);
-                   xValues.push(i==0?hour:"  ");
+                    var hour = time.substring(pos + 1, pos + 3);
+                    xValues.push(i == 0 ? hour : "  ");
                     yValues.push(wind_json.wind[i][0]);
- //                   console.log("data:" + xValues);
+                    //                   console.log("data:" + xValues);
 
                 }
             }
-             chart.update();
+            console.log("yval: ", yValues);
+            chart.update();
+        }
+
+        function addDataToTable3(wind_data) {
+
+            var wind_table = document.getElementById("wind-table");
+            const time_dict = {
+                0: "00",
+                1: "05",
+                2: "10",
+                3: "15",
+                4: "20",
+                5: "25",
+                6: "30",
+                7: "35",
+                8: "40",
+                9: "45",
+                10: "50",
+                11: "55",
+            }
+            // add a row for each wind value
+            var arr_len = wind_json.wind.length;
+            for (var i = 0; i < arr_len; i++) {
+
+
+
+                if (wind_json.wind[i][0] != 0 || wind_json.wind[i][1] != 0) {
+                    var row = wind_table.insertRow(1);
+                    var cell1 = row.insertCell(0);
+                    var cell2 = row.insertCell(1);
+                    var cell3 = row.insertCell(2);
+                    var time = wind_json.time.slice(11, 13);
+                    console.log("time:" + time);
+                    cell1.innerHTML = time + ":" + time_dict[i];
+                    cell2.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + wind_json.wind[i][0];
+                    cell3.innerHTML = directionString(wind_json.wind[i][1]);
+
+                    var pos = time.search(/ /);
+                    var hour = time.substring(pos + 1, pos + 3);
+                    xValues.push(i == 0 ? hour : "  ");
+                    yValues.push(wind_json.wind[i][0]);
+                    //                   console.log("data:" + xValues);
+
+                }
+
+            }
+            chart.update();
+        }
+
+
+        function addNewWindData(wind_data) {
+            try {
+                wind_json = JSON.parse(wind_data);
+            }
+            catch (err) {
+                console.log(err.message);
+            }
+
+
+            var time = new Date(wind_json.time);
+            time.setTime(time.getTime() + (7 * 60 * 60 * 1000));  // Need to remove UTC offset in Annie code
+            //            console.log("time:  " + time.getHours() + ":" + time.getMinutes());
+
+
+            // keep track of the most recent time read
+            if (time > latestTime) {
+                latestTime = time;
+            }
+            //            console.log("time2:  " + latestTime.getHours() + ":" + latestTime.getMinutes());
+
+            //           windData.push(wind_json.wind);
+            var hour = time.getHours();
+            windData[hour] = wind_json.wind;
+
+            for (var i = windData[hour].length - 1; i >= 0; --i) {
+                //                console.log("cmp: " + i + " " + windData[hour][i][0] + "_" + windData[hour][i][1])
+                if (windData[hour][i][0] == 0 && windData[hour][i][1] == 0) {
+                    windData[hour].pop();
+                }
+                else {
+                    break;
+                }
+            }
+
+
+
+            for (var i = 0; i < windData.length; ++i) {
+                console.log("winda:  " + i + " ** " + windData[i]);
+
+            }
+            console.log("recent: ", latestTime);
+            //          var x = windData[hour].map(function(value,index) { return value[1]; });
+            //          var y = windData[hour].map(function(value,index) { return value[0]; });
+            var x = [];
+            var y = [];
+            var hour = latestTime.getHours();
+
+            for (var i = 0; i < hour; ++i) {
+                if (windData[i] !== undefined) {
+                    console.log("aa:", i, hour);
+                    for (var j = 0; j < windData[i].length; ++j) {
+                        console.log("zz:", i, j, windData[i].length);
+                        console.log("z1:", windData[i][j][1]);
+                        x.push(j==0?i:" ");
+                        y.push(windData[i][j][0]);
+                        console.log("z2:", windData[i][j][0]);
+                    }
+
+                }
+            }
+
+            console.log("z3:");
+            chart.data.datasets[0].data = y;
+            console.log("z4:");
+            chart.data.labels = x;
+            console.log("xy:", y, x);
+
+            //          chart.datasets[0].data = windData[hour].map(function(value,index) { return value[0]; });
+
+            // for (var i = 0; i<windData[hour].length; ++i){
+            //     xValues.push(".");
+            //     yValues.push(windData[hour][i][0]);
+            // }
+
+            console.log("speed:", hour);
+            chart.update();
         }
 
         function showWind(wind_data) {
@@ -194,14 +324,9 @@
 </head>
 
 <body>
-    <h1>Jason, did you install the sensor?  If so, great! It looks like it got turned on. Email me at pdxalz@gmail.com.
-    </h1>
-    <h1>Sauvie Island Wind Conditions</h1>
-    <p> "The wind sensor and website are still in development.
-        The sensor is only active when we are on the island to set it up.
-        "</p>
+     <h1>Sauvie Island Wind Conditions</h1>
+    <p> "The wind sensor is working now.  Hopefully it will keep working."</p>
     <!--        <h3>Current Speed/Direction:</h3> -->
-    <canvas id="myChart" style="width:100%;max-width:700px"></canvas>
     <p id="recent-wind"></p>
     <table id="wind-table">
         <tr>
@@ -210,6 +335,7 @@
             <th>Wind Direction (deg)</th>
         </tr>
     </table>
+    <canvas id="myChart" style="width:100%;max-width:700px"></canvas>
     <script>
         MQTTconnect();
 
@@ -232,6 +358,7 @@
                 }
             }
         });
+        console.log("chart: ", yValues);
     </script>
 </body>
 
