@@ -15,6 +15,7 @@
         var row_ctr = 1;
         var xValues = [];
         var yValues = [];
+        var dirValues = [];
         var chart;
         var windData = [];
         var latestTime = new Date(0);
@@ -85,6 +86,12 @@
 
 
 
+        function northCenter(degrees) {
+            if (degrees < 180)
+                degrees += 360;
+            return degrees / 18;
+        }
+
         function plotWindData(wind_data) {
             try {
                 wind_json = JSON.parse(wind_data);
@@ -121,6 +128,7 @@
 
             var x = [];
             var y = [];
+            var dirData = [];
             var hour = latestTime.getHours();
             var i;
             // i = hour - 2;
@@ -133,12 +141,13 @@
 
             // }
 
-
-            for (i = 0; i < windData.length; ++i) {
+            i = (windData.length < 6) ? 0 : windData.length  - 6;
+            for (; i < windData.length; ++i) {
                 console.log("winddata: " + windData.length + "  " + i + " >> " + windData[i]);
                 for (var j = 0; j < windData[i].length; ++j) {
                     x.push(j == 0 ? i : "");
                     y.push(windData[i][j][0]);
+                    dirData.push(northCenter(windData[i][j][1]));
                 }
                 console.log("y:" + hour + " " + y);
             }
@@ -154,6 +163,7 @@
             // }
 
             chart.data.datasets[0].data = y;
+            chart.data.datasets[1].data = dirData;
             chart.data.labels = x;
             console.log(windData[hour]);
             console.log("speed:", hour);
@@ -218,7 +228,7 @@
             <th>Wind Direction (deg)</th>
         </tr>
     </table>
-    <canvas id="myChart" style="width:100%;max-width:700px"></canvas>
+    <canvas id="myChart" style="width:100%;max-width:1000px"></canvas>
     <script>
         MQTTconnect();
 
@@ -228,16 +238,27 @@
             data: {
                 labels: xValues,
                 datasets: [{
+                    label: "Wind Speed",
                     pointRadius: 1,
                     pointBackgroundColor: "rgb(0,0,255)",
-                    data: yValues
-                }]
+                    data: yValues,
+                    borderColor: "green"
+               },{
+                    label: "Direction (North at middle)",
+                    pointRadius: 1,
+                    pointBackgroundColor: "rgb(0,0,255)",
+                    data: dirValues,
+                    borderColor: "blue",
+                    fill: false,
+                    borderWidth: -1
+               },
+            ]
             },
             options: {
-                legend: { display: false },
+                legend: { display: true },
                 scales: {
                     xAxes: [{ ticks: { min: 40, max: 290 } }],
-                    yAxes: [{ ticks: { min: 0, max: 32 } }],
+                    yAxes: [{ ticks: { min: 0, max: 40 } }],
                 }
             }
         });
