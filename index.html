@@ -109,6 +109,7 @@
             var hour = time.getHours();
             windData[hour] = wind_json.wind;
 
+            // strip off the 0,0 "no data" values off the end.
             for (var i = windData[hour].length - 1; i >= 0; --i) {
                 if (windData[hour][i][0] == 0 && windData[hour][i][1] == 0) {
                     windData[hour].pop();
@@ -131,21 +132,16 @@
             //     }
 
             // }
-            i = hour - 1;
-            if (hour > 10) {
-                i = hour - 1;
+
+
+            for (i = 0; i < windData.length; ++i) {
+                console.log("winddata: " + windData.length + "  " + i + " >> " + windData[i]);
                 for (var j = 0; j < windData[i].length; ++j) {
-                    x.push(j == 0 ? i + 1 : "");
+                    x.push(j == 0 ? i : "");
                     y.push(windData[i][j][0]);
                 }
-
+                console.log("y:" + hour + " " + y);
             }
-            i = hour;
-            for (var j = 0; j < windData[i].length; ++j) {
-                x.push(j == 0 ? i + 1 : "");
-                y.push(windData[i][j][0]);
-            }
-            console.log("y:" + y);
             // var start = (hour < 8) ? 0 : hour - 6;
             // for (var i = 0; i < hour; ++i) {
             //     if (windData[i] !== undefined) {
@@ -210,6 +206,7 @@
 <body>
     <h1>Sauvie Island Wind Conditions</h1>
     <p> The wind sensor is mostly working now. Hopefully it will keep working. There are a few issues with the graphing.
+        Currently only able to show the last two hours of data.
     </p>
     <p> Updates occur every 5 minute from 10AM to 9PM if it is windy. Otherwise only on the hour.</p>
     <!--        <h3>Current Speed/Direction:</h3> -->
