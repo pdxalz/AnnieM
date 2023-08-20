@@ -85,8 +85,8 @@
                 return "12pm";
             else if (time24 < 12)
                 return time24.toString() + "am";
-            else 
-                return (time24-12).toString() + "pm" 
+            else
+                return (time24 - 12).toString() + "pm"
         }
 
         // Adds a wind speed message to the windData array then redraw the chart of all data
@@ -225,7 +225,25 @@
 
                 scales: {
                     xAxes: [{ ticks: { min: 40, max: 290 } }],
-                    yAxes: [{ position: 'right', ticks: { min: 0, max: 40 } }, { position: 'right', ticks: { min: -2, max: 2 } }],
+                    yAxes: [{
+                        position: 'right',
+                        ticks: {
+                            min: 0,
+                            max: 40,
+                        }
+                    },
+                    {
+                        position: 'right',
+                        
+                        ticks: {
+                            fontColor: 'blue',
+                            min: 0, max: 8, callback: function (value) {
+                                var x = ["S", "SW", "W", "NW", "N", "NE", "E", "SE", "S"];
+                                return x[value % x.length];
+
+                            }
+                        }
+                    }],
                 }
             }
         });
