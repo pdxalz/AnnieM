@@ -170,8 +170,6 @@
             console.log(windData[hour]);
             console.log("speed:", hour);
             chart.update();
-            document.getElementById('mySection').scrollLeft = 50;
-
         }
 
         function showWind(wind_data) {
@@ -232,13 +230,11 @@
         </tr>
     </table>
 
-    <section id="mySection">
-        <div style="width: 50%; overflow-x: auto; overflow-y: hidden;">
+         <div style="direction: rtl; width: 50%; overflow-x: auto; overflow-y: hidden;">
             <div style="width:2000px; height: 500px">
                 <canvas id="myChart" height="500" width="0"></canvas>
             </div>
         </div>
-    </section>
 
     <script>
         MQTTconnect();
