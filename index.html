@@ -104,17 +104,18 @@
             var time = new Date(wind_json.time);
             time.setTime(time.getTime() + (7 * 60 * 60 * 1000));  // Need to remove UTC offset in Annie code
 
+            console.log("timestamp: " + wind_json.time + "   latest: ", latestTime);
+
+            var hour = time.getHours();
+            windData[hour] = wind_json.wind;
+
             // keep track of the most recent time read
             if (time > latestTime) {
                 latestTime = time;
             }
             else {
-                return;
+                // return;
             }
-            console.log("timestamp: " + wind_json.time + "   latest: ", latestTime);
-
-            var hour = time.getHours();
-            windData[hour] = wind_json.wind;
 
             // strip off the 0,0 "no data" values off the end.
             for (var i = windData[hour].length - 1; i >= 0; --i) {
@@ -141,13 +142,14 @@
 
             // }
 
-            i = (windData.length < 6) ? 0 : windData.length  - 6;
-            for (; i < windData.length; ++i) {
-                console.log("winddata: " + windData.length + "  " + i + " >> " + windData[i]);
-                for (var j = 0; j < windData[i].length; ++j) {
-                    x.push(j == 0 ? i : "");
-                    y.push(windData[i][j][0]);
-                    dirData.push(northCenter(windData[i][j][1]));
+
+            for (i = 0; i < windData.length; ++i) {
+                var index = (hour + i + 1) % windData.length;
+                console.log("winddata: " + windData.length + "  " + i + " >> " + windData[index]);
+                for (var j = 0; j < windData[index].length; ++j) {
+                    x.push(j == 0 ? index : "");
+                    y.push(windData[index][j][0]);
+                    dirData.push(northCenter(windData[index][j][1]));
                 }
                 console.log("y:" + hour + " " + y);
             }
@@ -168,6 +170,8 @@
             console.log(windData[hour]);
             console.log("speed:", hour);
             chart.update();
+            document.getElementById('mySection').scrollLeft = 50;
+
         }
 
         function showWind(wind_data) {
@@ -228,10 +232,17 @@
             <th>Wind Direction (deg)</th>
         </tr>
     </table>
-    <canvas id="myChart" style="width:100%;max-width:1000px"></canvas>
+
+    <section id="mySection">
+        <div style="width: 50%; overflow-x: auto; overflow-y: hidden;">
+            <div style="width:2000px; height: 500px">
+                <canvas id="myChart" height="500" width="0"></canvas>
+            </div>
+        </div>
+    </section>
+
     <script>
         MQTTconnect();
-
 
         chart = new Chart("myChart", {
             type: "line",
@@ -243,7 +254,7 @@
                     pointBackgroundColor: "rgb(0,0,255)",
                     data: yValues,
                     borderColor: "green"
-               },{
+                }, {
                     label: "Direction (North at middle)",
                     pointRadius: 1,
                     pointBackgroundColor: "rgb(0,0,255)",
@@ -251,18 +262,20 @@
                     borderColor: "blue",
                     fill: false,
                     borderWidth: -1
-               },
-            ]
+                },
+                ]
             },
             options: {
                 legend: { display: true },
+
                 scales: {
                     xAxes: [{ ticks: { min: 40, max: 290 } }],
-                    yAxes: [{ ticks: { min: 0, max: 40 } }],
+                    yAxes: [{ position: 'right', ticks: { min: 0, max: 40 } }, { position: 'right', ticks: { min: -2, max: 2 } }],
                 }
             }
         });
         console.log("chart: ", yValues);
+
     </script>
 </body>
 
