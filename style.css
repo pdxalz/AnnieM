@@ -3,24 +3,12 @@ body {
     font-family: Arial, Helvetica, sans-serif;
   }
   
-  .top-container {
-    background-color: #f1f1f1;
-    padding: 30px;
+h1{
     text-align: center;
-  }
+    color: white;
+    font-weight: bold;
+}
 
-  
-  .content {
-    padding: 16px;
-  }
-  
-  .sticky {
-    position: fixed;
-    top: 0;
-    width: 100%;
-  }
-  
-  .sticky + .content {
-    padding-top: 102px;
-  }
-
+h2{
+    text-align: center;
+}

@@ -61,14 +61,13 @@
                 console.log(err.message);
             }
             var recentWind = document.getElementById("recent-wind");
-         /*   recentWind.innerHTML =
-                "<h2>" + " Current conditions at " + recent_json.time + "<br>" + " speed: " + recent_json.sp +
-                " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + "</h2>" +
-                " battery: " + recent_json.mv; */
+            var devInfo = document.getElementById("devInfo");
+         
             recentWind.innerHTML =
-                "<h2>"  +  recent_json.sp + "<small>mph</small>  " +directionString(recent_json.dir) + "<small>(" + recent_json.dir + "&#176)</small>"
-                " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + "</h2>" +
-                "<br> " +recent_json.time ;
+                "<h2><small>"  + recent_json.time + "</small><br>" +  recent_json.sp + "<small>mph</small>  " +directionString(recent_json.dir) + "<small>(" + recent_json.dir + "&#176)</small>"
+                " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + recent_json.time + "</h2>";
+           
+            devInfo.innerHTML = "<p> battery: " + recent_json.mv +"</p>";
         }
 
         // Hack to make degree data fit into windspeed data, North is center of chart
@@ -176,30 +175,27 @@
 </head>
 
 <body>
-    <div class="w3-container w3-light-blue w3-sticky">
+    <div class="w3-container w3-indigo">
         <h1>SAUVIE ISLAND WIND CONDITIONS</h1>
     </div>
     <div class="w3-panel w3-pale-blue">
-        <p id="recent-wind"></p>
+        <div id="recent-wind"></div>
     </div>
-    
-    <p style="color:red;"> There are data corrution issues with the wind chart.  Please ignore any data with a very south direction.</p>
-    <p> The blue line is the direction. North is at the center of the chart. </p>
-    <p> Updates occur every 5 minute from 10AM to 9PM if it is windy. Otherwise only on the hour.</p>
-    <!--        <h3>Current Speed/Direction:</h3> -->
+    <div class="w3-panel w3-pale-blue">
+        <p style="color:red;"> There are data corrution issues with the wind chart.  Please ignore any data with a very south direction.</p>
+        <p> The blue line is the direction. North is at the center of the chart. </p>
+        <p> Updates occur every 5 minute from 10AM to 9PM if it is windy. Otherwise only on the hour.</p>
+    </div>
    
-    <table id="wind-table">
-        <tr>
-            <th>Time</th>
-            <th>Wind Speed (mph)</th>
-            <th>Wind Direction (deg)</th>
-        </tr>
-    </table>
 
-    <div style="direction: rtl; width: 90%; overflow-x: auto; overflow-y: hidden;">
+    <div class="w3-panel w3-pale-blue" style="direction: rtl; overflow-x: auto; overflow-y: hidden;" >
         <div style="width:3000px; height: 500px">
             <canvas id="myChart" height="500" width="0"></canvas>
         </div>
+    </div>
+
+    <div class="w3-panel w3-pale-blue">
+        <div id="devInfo"></div>
     </div>
 
     <script>
