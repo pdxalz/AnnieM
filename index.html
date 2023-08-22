@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
-
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 <head>
     <title>Sauvie Wind Data</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript">
@@ -49,7 +49,7 @@
             var dir_index = Math.floor(((dir_num + 22) % 360) / 45);
             var dir_remainder = (dir_num - dir_index * 45);
             dir_remainder = (dir_remainder > 23) ? dir_remainder - 360 : dir_remainder;
-            return dir_dict[dir_index] + " " + "<small>" + dir_remainder + "</small>";
+            return dir_dict[dir_index] + " " + "<small>" + dir_remainder + "&#176</small>";
         }
 
         // Update the HTML reporting the most recent data
@@ -61,11 +61,13 @@
                 console.log(err.message);
             }
             var recentWind = document.getElementById("recent-wind");
+            var devInfo = document.getElementById("devInfo");
+         
             recentWind.innerHTML =
-                "<h2>" + " Current conditions at " + recent_json.time + "<br>" + " speed: " + recent_json.sp +
-                " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + "</h2>" +
-                " battery: " + recent_json.mv;
-            recent_json.mv;
+                "<h2><small>"  + recent_json.time + "</small><br>" +  recent_json.sp + "<small>mph</small>  " +directionString(recent_json.dir) + "<small>(" + recent_json.dir + "&#176)</small>"
+                " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + recent_json.time + "</h2>";
+           
+            devInfo.innerHTML = "<p> battery: " + recent_json.mv +"</p>";
         }
 
         // Hack to make degree data fit into windspeed data, North is center of chart
@@ -108,7 +110,7 @@
 
             if (time.getTime() < (Date.now() - (2 * 24 * 60 * 60 * 1000))) {
                 for (var i = windData[hour].length - 1; i >= 0; --i) {
-                    windData[hour][i][1] = 170;
+                    windData[hour][i][1] = 177;
                 }
             }
             // strip off the 0,0 "no data" values off the end.
@@ -173,24 +175,27 @@
 </head>
 
 <body>
-    <h1>Sauvie Island Wind Conditions</h1>
-    <p style="color:red;"> There are data corrution issues with the wind chart.  Please ignore any data with a very south direction.</p>
-    <p> The blue line is the direction. North is at the center of the chart. </p>
-    <p> Updates occur every 5 minute from 10AM to 9PM if it is windy. Otherwise only on the hour.</p>
-    <!--        <h3>Current Speed/Direction:</h3> -->
-    <p id="recent-wind"></p>
-    <table id="wind-table">
-        <tr>
-            <th>Time</th>
-            <th>Wind Speed (mph)</th>
-            <th>Wind Direction (deg)</th>
-        </tr>
-    </table>
+    <div class="w3-container w3-indigo">
+        <h1>SAUVIE ISLAND WIND</h1>
+    </div>
+    <div class="w3-panel w3-pale-blue">
+        <div id="recent-wind"></div>
+    </div>
+    <div class="w3-panel w3-pale-blue">
+        <p style="color:red;"> There are data corruption issues with the wind chart.  Please ignore any data if the direction is at the top of the chart.</p>
+        <p> The blue line is the direction. North is at the center of the chart. </p>
+        <p> Updates occur every 5 minutes from 10AM to 9PM if it is windy. Otherwise it is only updated on the hour.</p>
+    </div>
+   
 
-    <div style="direction: rtl; width: 90%; overflow-x: auto; overflow-y: hidden;">
+    <div class="w3-panel w3-pale-blue" style="direction: rtl; overflow-x: auto; overflow-y: hidden;" >
         <div style="width:3000px; height: 500px">
             <canvas id="myChart" height="500" width="0"></canvas>
         </div>
+    </div>
+
+    <div class="w3-panel w3-pale-blue">
+        <div id="devInfo"></div>
     </div>
 
     <script>
