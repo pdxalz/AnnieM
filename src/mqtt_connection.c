@@ -9,10 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <dk_buttons_and_leds.h>
 #include "mqtt_connection.h"
-// #include "wind_sensor.h"
-// #include "power.h"
 
-//#define DEFAULT_SAMPLE_TIME (15) // todo remove
 #define DEFAULT_SAMPLE_TIME (5 * 60) // 5 minutes 
 #define FAST_SAMPLE_TIME (15) // 15 sec
 /* Buffers for MQTT client. */

@@ -32,6 +32,7 @@ static K_SEM_DEFINE(lte_connected, 0, 1);
 #define TOPIC_STR "zimbuktu2/testing"
 
 
+// work thread for test message
 static void mm_callback(struct k_work *timer_id)
 {
     int err = data_publish(&client, MQTT_QOS_1_AT_LEAST_ONCE,
@@ -47,6 +48,7 @@ static void mm_callback(struct k_work *timer_id)
 }
 static K_WORK_DEFINE(mm_work, mm_callback);
 
+// test message sent on button press
 void send_mqtt(void)
 {
     turn_leds_on_with_color(CYAN);
@@ -93,18 +95,12 @@ static void modem_configure(void)
 
 void main(void)
 {
-
     init_leds();
-
     turn_leds_on_with_color(YELLOW);
 
     int err;
     uint32_t connect_attempt = 0;
 
-    // if (init_power() != 0)
-    // {
-    // 	printk("Failed to initialize the power control");
-    // }
     init_adc();
 
     // printk("2 ADC testing...\n");
@@ -122,10 +118,6 @@ void main(void)
 
 	// 	k_sleep(K_MSEC(2000));
 	// }
-
-
-
-
 
     modem_configure();
 
