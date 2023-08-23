@@ -2,6 +2,7 @@
 <html lang="en">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
 <head>
     <title>Sauvie Wind Data</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript">
@@ -62,12 +63,12 @@
             }
             var recentWind = document.getElementById("recent-wind");
             var devInfo = document.getElementById("devInfo");
-         
+
             recentWind.innerHTML =
-                "<h2><small>"  + recent_json.time + "</small><br>" +  recent_json.sp + "<small>mph</small>  " +directionString(recent_json.dir) + "<small>(" + recent_json.dir + "&#176)</small>"
-                " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + recent_json.time + "</h2>";
-           
-            devInfo.innerHTML = "<p> battery: " + recent_json.mv +"</p>";
+                "<h2><small>" + recent_json.time + "</small><br>" + recent_json.sp + "<small>mph</small>  " + directionString(recent_json.dir) + "<small>(" + recent_json.dir + "&#176)</small>"
+            " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + recent_json.time + "</h2>";
+
+            devInfo.innerHTML = "<p> battery: " + recent_json.mv + "</p>";
         }
 
         // Hack to make degree data fit into windspeed data, North is center of chart
@@ -181,22 +182,39 @@
     <div class="w3-panel w3-pale-blue">
         <div id="recent-wind"></div>
     </div>
-    <div class="w3-panel w3-pale-blue">
-        <p style="color:red;"> There are data corruption issues with the wind chart.  Please ignore any data if the direction is at the top of the chart.</p>
-        <p> The blue line is the direction. North is at the center of the chart. </p>
-        <p> Updates occur every 5 minutes from 10AM to 9PM if it is windy. Otherwise it is only updated on the hour.</p>
-    </div>
-   
 
-    <div class="w3-panel w3-pale-blue" style="direction: rtl; overflow-x: auto; overflow-y: hidden;" >
+    <div class="w3-panel w3-pale-blue" style="direction: rtl; overflow-x: auto; overflow-y: hidden;">
         <div style="width:3000px; height: 500px">
             <canvas id="myChart" height="500" width="0"></canvas>
         </div>
     </div>
 
     <div class="w3-panel w3-pale-blue">
-        <div id="devInfo"></div>
+        <p> The blue line is the direction. North is at the center of the chart. 
+         Updates occur every 5 minutes from 10AM to 9PM if it is windy. Otherwise it is only updated on the hour.
+         The sensor will be taken down in September for improvements and will return in May.</p>
     </div>
+
+    <div class="w3-panel w3-pale-blue">
+        <p  style="font-size:150%; text-align: center;" > 
+            If you would like make a donation to help pay for the hardware and recurring costs,
+            please click the donate button.</p>
+        <form action="https://www.paypal.com/donate" method="post" target="_top">
+            <input type="hidden" name="business" value="25GJHM2LDXKG2" />
+            <input type="hidden" name="no_recurring" value="1" />
+            <input type="hidden" name="item_name" value="Help cover costs for the Sauvie Wind Sensor." />
+            <input type="hidden" name="currency_code" value="USD" />
+            <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0"
+                name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+            <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
+        </form>
+    </div>
+
+    <!-- <div class="w3-panel w3-pale-blue">
+        <div id="devInfo"></div>
+        </div>
+        -->
+
 
     <script>
         MQTTconnect();
@@ -227,15 +245,16 @@
                     yAxes: [{
                         position: 'right',
                         ticks: {
+                            fontSize: 25,
                             min: 0,
                             max: 40,
                         }
                     },
                     {
                         position: 'right',
-
                         ticks: {
                             fontColor: 'blue',
+                            fontSize: 25,
                             min: 0, max: 8, callback: function (value) {
                                 var x = ["S", "SW", "W", "NW", "N", "NE", "E", "SE", "S"];
                                 return x[value % x.length];
