@@ -16,6 +16,7 @@
         var chart;
         var windData = [];               // Array of wind reports, index is hour
         var latestTime = new Date(0);    // Time of most recent report
+        var maxGust = 0;
 
         function onFailure(message) {
             console.log("Connection Attempt to Host " + host + "Failed");
@@ -48,9 +49,9 @@
             }
             var dir_num = Number(direction);
             var dir_index = Math.floor(((dir_num + 22) % 360) / 45);
-            var dir_remainder = (dir_num - dir_index * 45);
-            dir_remainder = (dir_remainder > 23) ? dir_remainder - 360 : dir_remainder;
-            return dir_dict[dir_index] + " " + "<small>" + dir_remainder + "&#176</small>";
+            var rem = (dir_num - dir_index * 45);
+            rem = (rem > 23) ? rem - 360 : rem;
+            return dir_dict[dir_index] + " " + "<small>" + (rem<0?' ':'+') + rem + "&#176</small>";
         }
 
         // Update the HTML reporting the most recent data
@@ -65,8 +66,9 @@
             var devInfo = document.getElementById("devInfo");
 
             recentWind.innerHTML =
-                "<h2><small>" + recent_json.time + "</small><br>" + recent_json.sp + "<small>mph</small>  " + directionString(recent_json.dir) + "<small>(" + recent_json.dir + "&#176)</small>"
-            " Direction: " + directionString(recent_json.dir) + "(" + recent_json.dir + ")" + recent_json.time + "</h2>";
+                "<h2><small>" + recent_json.time + "</small><br>" + 
+                    recent_json.sp + "<small>mph</small>  " + directionString(recent_json.dir) +
+                    "<small> Gust: </small> " +  maxGust;
 
             devInfo.innerHTML = "<p> battery: " + recent_json.mv + "</p>";
         }
@@ -97,6 +99,8 @@
             }
             // get the time of the wind sample
             var time = new Date(wind_json.time);
+            maxGust = 0;
+
             time.setTime(time.getTime() + (7 * 60 * 60 * 1000) + (30 * 24 * 60 * 60 * 1000));  // Need to remove UTC offset in Annie code
             //           console.log("timestamp: " + wind_json.time + "   latest: ", latestTime);
 
@@ -109,6 +113,7 @@
                 latestTime = time;
             }
 
+            // check for corrupted data, older than two days ago
             if (time.getTime() < (Date.now() - (2 * 24 * 60 * 60 * 1000))) {
                 for (var i = windData[hour].length - 1; i >= 0; --i) {
                     windData[hour][i][1] = 177;
@@ -137,8 +142,12 @@
                     sampleTimes.push(j == 0 ? timeString(index) : "");
                     speedData.push(windData[index][j][0]);
                     dirData.push(northCenter(windData[index][j][1]));
+                    if (windData[index][j][0] > maxGust)
+                        maxGust = windData[index][j][0];
                 }
             }
+
+            var gust = document.getElementById("max-gust");
 
             chart.data.datasets[0].data = speedData;
             chart.data.datasets[1].data = dirData;
