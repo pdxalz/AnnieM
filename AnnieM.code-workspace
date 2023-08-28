@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "adc-battery-voltage",
+			"path": "../../adc-battery-voltage"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"adc.h": "c",
+			"stdio.h": "c",
+			"string.h": "c",
+			"date_time.h": "c",
+			"mqtt_connection.h": "c",
+			"mqtt.h": "c",
+			"health.h": "c"
+		}
+	}
+}
