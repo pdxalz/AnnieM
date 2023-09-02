@@ -26,7 +26,7 @@
         // Handle subscribed MQTT Message
         function onMessageArrived(msg) {
             var wind_data = msg.payloadString;
-            // console.log("dest: :" + msg.destinationName);
+            console.log("dest: :" + msg.destinationName + " *** " + msg.payloadString);
 
             if (msg.destinationName.search("recent") >= 0) {
                 addDataToRecent(wind_data);
@@ -51,7 +51,7 @@
             var dir_index = Math.floor(((dir_num + 22) % 360) / 45);
             var rem = (dir_num - dir_index * 45);
             rem = (rem > 23) ? rem - 360 : rem;
-            return dir_dict[dir_index] + " " + "<small>" + (rem<0?' ':'+') + rem + "&#176</small>";
+            return dir_dict[dir_index] + " " + "<small>" + (rem < 0 ? ' ' : '+') + rem + "&#176</small>";
         }
 
         // Update the HTML reporting the most recent data
@@ -66,11 +66,11 @@
             var devInfo = document.getElementById("devInfo");
 
             recentWind.innerHTML =
-                "<h2><small>" + recent_json.time + "</small><br>" + 
-                    recent_json.sp + "<small>mph</small>  " + directionString(recent_json.dir) +
-                    "<small> Gust: </small> " +  maxGust;
+                "<h2><small>" + recent_json.time + "</small><br>" +
+                recent_json.sp + "<small>mph</small>  " + directionString(recent_json.dir) +
+                "<small> Gust: </small> " + maxGust;
 
-            devInfo.innerHTML = "<p> battery: " + recent_json.mv + "</p>";
+            //            devInfo.innerHTML = "<p> battery: " + recent_json.mv + "</p>";
         }
 
         // Hack to make degree data fit into windspeed data, North is center of chart
@@ -104,7 +104,8 @@
             time.setTime(time.getTime() + (7 * 60 * 60 * 1000) + (30 * 24 * 60 * 60 * 1000));  // Need to remove UTC offset in Annie code
             //           console.log("timestamp: " + wind_json.time + "   latest: ", latestTime);
 
-            // the sample hour is the index to the windData array
+            // The windData array gets filled with the wind messages. 
+            // The sample hour is the index to the windData array.  
             var hour = time.getHours();
             windData[hour] = wind_json.wind;
 
@@ -137,8 +138,9 @@
             // Scan through the windData in order by time and
             // create the arrays for the chart.
             for (var i = 0; i < windData.length; ++i) {
+                // index = the oldest sample
                 var index = (hour + i + 1) % windData.length;
-                for (var j = 0; j < windData[index].length; ++j) {
+                for (var j = 0; (windData[index] !== undefined && j < windData[index].length); ++j) {
                     sampleTimes.push(j == 0 ? timeString(index) : "");
                     speedData.push(windData[index][j][0]);
                     dirData.push(northCenter(windData[index][j][1]));
@@ -199,13 +201,13 @@
     </div>
 
     <div class="w3-panel w3-pale-blue">
-        <p> The blue line is the direction. North is at the center of the chart. 
-         Updates occur every 5 minutes from 10AM to 9PM if it is windy. Otherwise it is only updated on the hour.
-         The sensor will be taken down in September for improvements and will return in May.</p>
+        <p> The blue line is the direction. North is at the center of the chart.
+            Updates occur every 5 minutes from 10AM to 9PM if it is windy. Otherwise it is only updated on the hour.
+            The sensor will be taken down in September for improvements and will return in May.</p>
     </div>
 
     <div class="w3-panel w3-pale-blue">
-        <p  style="font-size:150%; text-align: center;" > 
+        <p style="font-size:150%; text-align: center;">
             If you would like make a donation to help pay for the hardware and recurring costs,
             please click the donate button.</p>
         <form action="https://www.paypal.com/donate" method="post" target="_top">
