@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/net/socket.h>
-#include <dk_buttons_and_leds.h>
 #include <modem/lte_lc.h>
 #include <zephyr/drivers/gpio.h>
 #include <date_time.h>
@@ -227,7 +226,9 @@ void frequency_counter(struct k_timer *work)
 	speed = (int)f;
 	printk("Windspeed %d ...\n", speed);
 	frequency = 0;
-	turn_leds_off();
+//	turn_leds_off();
+    turn_leds_on_with_color(BLUE);
+
 	// set_boost(false);
 
 	k_work_submit(&repeating_timer_work);

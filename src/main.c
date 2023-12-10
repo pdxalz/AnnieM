@@ -39,11 +39,11 @@ static void mm_callback(struct k_work *timer_id)
                            CONFIG_BUTTON_EVENT_PUBLISH_MSG, sizeof(CONFIG_BUTTON_EVENT_PUBLISH_MSG) - 1,TOPIC_STR, 1);
     if (err)
     {
-        turn_leds_on_with_color(RED);
+        turn_leds_on_with_color(MAGENTA);
         printk("Failed to send message, %d", err);
         return;
     }
-    turn_leds_on_with_color(YELLOW);
+    turn_leds_on_with_color(BLUE);
 
 }
 static K_WORK_DEFINE(mm_work, mm_callback);
@@ -88,7 +88,7 @@ static void modem_configure(void)
         return;
     }
     k_sem_take(&lte_connected, K_FOREVER);
-    turn_leds_on_with_color(GREEN);
+    turn_leds_on_with_color(CYAN);
 
     printk("Connected to LTE network\n");
 }
@@ -96,7 +96,7 @@ static void modem_configure(void)
 void main(void)
 {
     init_leds();
-    turn_leds_on_with_color(YELLOW);
+    turn_leds_on_with_color(WHITE);
 
     int err;
     uint32_t connect_attempt = 0;
@@ -121,7 +121,7 @@ void main(void)
 
     modem_configure();
 
-    turn_leds_on_with_color(RED);
+    turn_leds_on_with_color(YELLOW);
 
     err = client_init(&client);
     if (err)

@@ -121,5 +121,10 @@ void turn_leds_on_with_color(led_color_t color)
         gpio_pin_set_dt(&green_led, LED_ON);
         gpio_pin_set_dt(&blue_led, LED_OFF);
         break;
+    case WHITE:
+        gpio_pin_set_dt(&red_led, LED_ON);
+        gpio_pin_set_dt(&green_led, LED_ON);
+        gpio_pin_set_dt(&blue_led, LED_ON);
+        break;
     }
 }

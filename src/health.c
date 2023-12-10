@@ -38,7 +38,7 @@ static void health_timer_callback(struct k_timer *work)
 	rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
 	//	printk("health timer: %s  chars: %d\n", buf, rc);
 
-//	turn_leds_on_with_color(CYAN);
+	turn_leds_on_with_color(RED);
 	k_work_submit(&health_worker);
 }
 

@@ -8,7 +8,8 @@ typedef enum
     BLUE,
     MAGENTA,
     CYAN,
-    YELLOW
+    YELLOW,
+    WHITE
 } led_color_t;
 
 
