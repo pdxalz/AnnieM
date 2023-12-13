@@ -20,6 +20,8 @@
 #include "adc.h"
 #include "health.h"
 
+LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
+
 extern int setenv(const char *name, const char *value, int overwrite);
 
 /* The mqtt client struct */
@@ -31,28 +33,28 @@ static K_SEM_DEFINE(lte_connected, 0, 1);
 
 #define TOPIC_STR "zimbuktu2/testing"
 
-
+// unused test code
 // work thread for test message
 static void mm_callback(struct k_work *timer_id)
 {
     int err = data_publish(&client, MQTT_QOS_1_AT_LEAST_ONCE,
-                           CONFIG_BUTTON_EVENT_PUBLISH_MSG, sizeof(CONFIG_BUTTON_EVENT_PUBLISH_MSG) - 1,TOPIC_STR, 1);
+                           CONFIG_BUTTON_EVENT_PUBLISH_MSG, sizeof(CONFIG_BUTTON_EVENT_PUBLISH_MSG) - 1, TOPIC_STR, 1);
     if (err)
     {
         turn_leds_on_with_color(MAGENTA);
-        printk("Failed to send message, %d", err);
+        LOG_WRN("Failed to send message, %d", err);
         return;
     }
     turn_leds_on_with_color(BLUE);
-
 }
 static K_WORK_DEFINE(mm_work, mm_callback);
 
+// unused test code
 // test message sent on button press
 void send_mqtt(void)
 {
     turn_leds_on_with_color(CYAN);
-	k_work_submit(&mm_work);
+    k_work_submit(&mm_work);
 }
 
 static void lte_handler(const struct lte_lc_evt *const evt)
@@ -65,12 +67,12 @@ static void lte_handler(const struct lte_lc_evt *const evt)
         {
             break;
         }
-        printk("Network registration status: %s\n",
-               evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_HOME ? "Connected - home network" : "Connected - roaming");
+        LOG_DBG("Network registration status: %s\n",
+                evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_HOME ? "Connected - home network" : "Connected - roaming");
         k_sem_give(&lte_connected);
         break;
     case LTE_LC_EVT_RRC_UPDATE:
-        printk("RRC mode: %s\n", evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED ? "Connected" : "Idle");
+        LOG_DBG("RRC mode: %s\n", evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED ? "Connected" : "Idle");
         break;
     default:
         break;
@@ -79,18 +81,18 @@ static void lte_handler(const struct lte_lc_evt *const evt)
 
 static void modem_configure(void)
 {
-    printk("Connecting to LTE network\n");
+    LOG_INF("Connecting to LTE network\n");
 
     int err = lte_lc_init_and_connect_async(lte_handler);
     if (err)
     {
-        printk("Modem could not be configured, error: %d\n", err);
+        LOG_ERR("Modem could not be configured, error: %d\n", err);
         return;
     }
     k_sem_take(&lte_connected, K_FOREVER);
     turn_leds_on_with_color(CYAN);
 
-    printk("Connected to LTE network\n");
+    LOG_INF("Connected to LTE network\n");
 }
 
 void main(void)
@@ -104,20 +106,19 @@ void main(void)
     init_adc();
 
     // printk("2 ADC testing...\n");
- 	// while (1) {
-	// 	uint16_t battery_voltage = 0;
-	// 	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &battery_voltage);
-	// 	printk("Battery voltage: %u mV  %u\n", battery_voltage, get_battery_voltage());
+    // while (1) {
+    // 	uint16_t battery_voltage = 0;
+    // 	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &battery_voltage);
+    // 	printk("Battery voltage: %u mV  %u\n", battery_voltage, get_battery_voltage());
 
+    // 	get_adc_voltage(ADC_WIND_DIR_ID, &battery_voltage);
+    // 	printk("Direction voltage: %u mV\n", battery_voltage);
 
-	// 	get_adc_voltage(ADC_WIND_DIR_ID, &battery_voltage);
-	// 	printk("Direction voltage: %u mV\n", battery_voltage);
+    // 	get_adc_voltage(ADC_TEMPERATURE_ID, &battery_voltage);
+    // 	printk("Temp voltage: %u mV  %d\n", battery_voltage, get_temperature());
 
-	// 	get_adc_voltage(ADC_TEMPERATURE_ID, &battery_voltage);
-	// 	printk("Temp voltage: %u mV  %d\n", battery_voltage, get_temperature());
-
-	// 	k_sleep(K_MSEC(2000));
-	// }
+    // 	k_sleep(K_MSEC(2000));
+    // }
 
     modem_configure();
 
@@ -126,7 +127,7 @@ void main(void)
     err = client_init(&client);
     if (err)
     {
-        printk("Failed to initialize MQTT client: %d\n", err);
+        LOG_ERR("Failed to initialize MQTT client: %d\n", err);
         return;
     }
     setenv("TZ", "PST8PDT", 1);
@@ -139,21 +140,21 @@ void main(void)
 do_connect:
     if (connect_attempt++ > 0)
     {
-        printk("Reconnecting in %d seconds...\n",
-               CONFIG_MQTT_RECONNECT_DELAY_S);
+        LOG_INF("Reconnecting in %d seconds...\n",
+                CONFIG_MQTT_RECONNECT_DELAY_S);
         k_sleep(K_SECONDS(CONFIG_MQTT_RECONNECT_DELAY_S));
     }
     err = mqtt_connect(&client);
     if (err)
     {
-        printk("Error in mqtt_connect: %d\n", err);
+        LOG_WRN("Error in mqtt_connect: %d\n", err);
         goto do_connect;
     }
 
     err = fds_init(&client, &fds);
     if (err)
     {
-        printk("Error in fds_init: %d\n", err);
+        LOG_WRN("Error in fds_init: %d\n", err);
         return;
     }
 
@@ -162,14 +163,14 @@ do_connect:
         err = poll(&fds, 1, mqtt_keepalive_time_left(&client));
         if (err < 0)
         {
-            printk("Error in poll(): %d\n", errno);
+            LOG_WRN("Error in poll(): %d\n", errno);
             break;
         }
 
         err = mqtt_live(&client);
         if ((err != 0) && (err != -EAGAIN))
         {
-            printk("Error in mqtt_live: %d\n", err);
+            LOG_WRN("Error in mqtt_live: %d\n", err);
             break;
         }
 
@@ -178,30 +179,30 @@ do_connect:
             err = mqtt_input(&client);
             if (err != 0)
             {
-                printk("Error in mqtt_input: %d\n", err);
+                LOG_WRN("Error in mqtt_input: %d\n", err);
                 break;
             }
         }
 
         if ((fds.revents & POLLERR) == POLLERR)
         {
-            printk("POLLERR\n");
+            LOG_WRN("POLLERR\n");
             break;
         }
 
         if ((fds.revents & POLLNVAL) == POLLNVAL)
         {
-            printk("POLLNVAL\n");
+            LOG_WRN("POLLNVAL\n");
             break;
         }
     }
 
-    printk("Disconnecting MQTT client\n");
+    LOG_INF("Disconnecting MQTT client\n");
 
     err = mqtt_disconnect(&client);
     if (err)
     {
-        printk("Could not disconnect MQTT client: %d\n", err);
+        LOG_WRN("Could not disconnect MQTT client: %d\n", err);
     }
     goto do_connect;
 }

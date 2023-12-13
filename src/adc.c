@@ -1,5 +1,7 @@
 #include <zephyr/drivers/adc.h>
 #include "adc.h"
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(adc, LOG_LEVEL_INF);
 
 #define BATVOLT_R1 4.7f			 // MOhm
 #define BATVOLT_R2 10.0f		 // MOhm
@@ -21,6 +23,7 @@ static int16_t m_sample_buffer[BUFFER_SIZE];
 
 static const struct device *adc_dev;
 
+// Battery voltage ADC
 static const struct adc_channel_cfg m_1st_channel_cfg = {
 	.gain = ADC_GAIN,
 	.reference = ADC_REFERENCE,
@@ -29,6 +32,7 @@ static const struct adc_channel_cfg m_1st_channel_cfg = {
 	.input_positive = ADC_1ST_CHANNEL_INPUT,
 };
 
+// Wind direction ADC
 static const struct adc_channel_cfg m_2nd_channel_cfg = {
 	.gain = ADC_GAIN,
 	.reference = ADC_REFERENCE,
@@ -37,6 +41,7 @@ static const struct adc_channel_cfg m_2nd_channel_cfg = {
 	.input_positive = ADC_2ND_CHANNEL_INPUT,
 };
 
+// Temperature Sensor ADC
 static const struct adc_channel_cfg m_3rd_channel_cfg = {
 	.gain = ADC_GAIN,
 	.reference = ADC_REFERENCE,
@@ -45,6 +50,7 @@ static const struct adc_channel_cfg m_3rd_channel_cfg = {
 	.input_positive = ADC_3RD_CHANNEL_INPUT,
 };
 
+// Get battery voltage in millivolts, return 0 if successful
 int get_adc_voltage(uint8_t channel, uint16_t *battery_voltage)
 {
 	int err;
@@ -64,7 +70,7 @@ int get_adc_voltage(uint8_t channel, uint16_t *battery_voltage)
 	err = adc_read(adc_dev, &sequence);
 	if (err)
 	{
-		printk("ADC read err: %d\n", err);
+		LOG_WRN("ADC read err: %d\n", err);
 
 		return err;
 	}
@@ -74,14 +80,15 @@ int get_adc_voltage(uint8_t channel, uint16_t *battery_voltage)
 	{
 		sample_value += (float)m_sample_buffer[i];
 	}
-//	printk("   buf: %d\n", m_sample_buffer[0] );
+	//	printk("   buf: %d\n", m_sample_buffer[0] );
 	sample_value /= BUFFER_SIZE;
 	*battery_voltage = (uint16_t)(sample_value * (INPUT_VOLT_RANGE / VALUE_RANGE_10_BIT));
-//	*battery_voltage = (uint16_t)(sample_value * (INPUT_VOLT_RANGE / VALUE_RANGE_10_BIT) * ((BATVOLT_R1 + BATVOLT_R2) / BATVOLT_R2));
+	//	*battery_voltage = (uint16_t)(sample_value * (INPUT_VOLT_RANGE / VALUE_RANGE_10_BIT) * ((BATVOLT_R1 + BATVOLT_R2) / BATVOLT_R2));
 
 	return 0;
 }
 
+// initalize all ADC channels
 bool init_adc()
 {
 	int err;
@@ -89,7 +96,7 @@ bool init_adc()
 	adc_dev = DEVICE_DT_GET(ADC_NODE);
 	if (!adc_dev)
 	{
-		printk("Error getting adc failed\n");
+		LOG_WRN("Error getting adc failed\n");
 
 		return false;
 	}
@@ -97,7 +104,7 @@ bool init_adc()
 	err = adc_channel_setup(adc_dev, &m_1st_channel_cfg);
 	if (err)
 	{
-		printk("Error in adc setup: %d\n", err);
+		LOG_WRN("Error in adc setup: %d\n", err);
 
 		return false;
 	}
@@ -105,7 +112,7 @@ bool init_adc()
 	err = adc_channel_setup(adc_dev, &m_2nd_channel_cfg);
 	if (err)
 	{
-		printk("Error in adc setup: %d\n", err);
+		LOG_WRN("Error in adc setup: %d\n", err);
 
 		return false;
 	}
@@ -113,7 +120,7 @@ bool init_adc()
 	err = adc_channel_setup(adc_dev, &m_3rd_channel_cfg);
 	if (err)
 	{
-		printk("Error in adc setup: %d\n", err);
+		LOG_WRN("Error in adc setup: %d\n", err);
 
 		return false;
 	}

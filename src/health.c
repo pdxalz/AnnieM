@@ -8,6 +8,8 @@
 #include "health.h"
 #include "mqtt_connection.h"
 #include "adc.h"
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(health, LOG_LEVEL_INF);
 
 extern uint8_t wmsg[200];
 extern uint8_t topic[80];
@@ -87,7 +89,7 @@ static void health_worker_callback(struct k_work *timer_id)
 					   wmsg, strlen(wmsg), topic, 1);
 	if (err)
 	{
-		printk("Failed to send pwr message, %d\n", err);
+		LOG_WRN("Failed to send pwr message, %d\n", err);
 		return;
 	}
 }
@@ -109,7 +111,7 @@ int get_battery_voltage()
 
 	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &volts);
 	corrected = (volts * ((BATVOLT_R1 + BATVOLT_R2) / BATVOLT_R2));
-	printk("battery %d  %d\n",  volts, corrected);
+	LOG_DBG("battery %d  %d\n",  volts, corrected);
 	return corrected;
 }
 
@@ -127,7 +129,6 @@ int get_temperature()
 
 	temperature = T1 + (volts - V1) * (T2 - T1) / (V2 - V1); // conversion
 	temperature = (temperature * 9.0 / 5.0) + 32;			 // F conversion
-	printk("temperature=%d volts=%d\n", temperature, volts);
 	return temperature;
 }
 

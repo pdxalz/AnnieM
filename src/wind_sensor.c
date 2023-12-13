@@ -12,6 +12,8 @@
 #include "adc.h"
 #include "health.h"
 #include "leds.h"
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(sensor, LOG_LEVEL_INF);
 
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
 static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
@@ -27,14 +29,15 @@ static int oldspeed = 0;
 static bool broker_cleared = false;
 static uint16_t wind_direction;
 
+// todo replace message building buffers
 uint8_t wmsg[200];
-uint8_t tmsg[80];
 uint8_t topic[80];
 uint8_t buf[100];
 
 uint16_t vbuf[8];
 uint16_t v_index = 0;
 
+// todo: should be calculated
 #define SAMPLES_PER_HOUR 12
 struct w_sensor
 {
@@ -78,6 +81,7 @@ static void wind_check_callback(struct k_timer *work)
 	begin_wind_sample();
 }
 
+// creates JSON string containing time and wind data
 static void build_array_string(uint8_t *buf, struct tm *t)
 {
 
@@ -92,13 +96,13 @@ static void build_array_string(uint8_t *buf, struct tm *t)
 	sprintf(buf, "]}");
 }
 
-// erases the persistant MQTT data, occurs once
+// erases the persistant MQTT data, occurs once at boot time
 static void clear_broker_history()
 {
 	// clear the broker data first time after power up
 	if (!broker_cleared)
 	{
-		printk("clearing broker history\n");
+		LOG_WRN("clearing broker history\n");
 		broker_cleared = true;
 		for (int i = 0; i < 24; ++i)
 		{
@@ -107,7 +111,7 @@ static void clear_broker_history()
 								   "", 0, topic, 1);
 			if (err)
 			{
-				printk("Failed to send broker clear message, %d\n", err);
+				LOG_WRN("Failed to send broker clear message, %d\n", err);
 				return;
 			}
 		}
@@ -123,13 +127,14 @@ static uint16_t circ_avg(uint16_t a, uint16_t b)
 	return angle;
 }
 
+// updates the wind_direction variable by reading sensor voltage and applying a running average.
 static void check_wind_direction(struct k_timer *work)
 {
 	uint16_t voltage;
 
 	if (get_adc_voltage(ADC_WIND_DIR_ID, &voltage) != 0)
 	{
-		printk("Failed to get direction voltage\n");
+		LOG_WRN("Failed to get direction voltage\n");
 		return;
 	};
 
@@ -141,12 +146,13 @@ static void check_wind_direction(struct k_timer *work)
 		circ_avg(circ_avg(vbuf[0], vbuf[1]), circ_avg(vbuf[2], vbuf[3])),
 		circ_avg(circ_avg(vbuf[4], vbuf[5]), circ_avg(vbuf[6], vbuf[7])));
 
-	printk("dir volts %d  dir %d\n", voltage, wind_direction);
+	//	LOG_INF("dir volts %d  dir %d\n", voltage, wind_direction);
 }
 
 #define NUM_PWR 12
 
 // background task that sends the MQTT sensor data
+// data is sent less often if night time or little wind
 static void speed_calc_callback(struct k_work *timer_id)
 {
 	time_t now;
@@ -187,7 +193,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 	// publish only if the time is between 10AM and 9PM and
 	// the speed is higher than 5
 	if ((minute / 5 == 11) ||
-		(hour > 9 && hour < 21 && (speed > 5)))
+		(hour > 9 && hour < 21 && (speed >= 0)))
 	{
 
 		int err;
@@ -196,13 +202,12 @@ static void speed_calc_callback(struct k_work *timer_id)
 						   wmsg, strlen(wmsg), topic, 1);
 		if (err)
 		{
-			printk("Failed to send message, %d\n", err);
+			LOG_WRN("Failed to send message, %d\n", err);
 			return;
 		}
 
 		uint16_t current_volts;
 
-		//	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &current_volts);
 		current_volts = get_battery_voltage();
 
 		sprintf(topic, "%s/recent", CONFIG_MQTT_PRIMARY_TOPIC);
@@ -212,7 +217,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 						   wmsg, strlen(wmsg), topic, 1);
 		if (err)
 		{
-			printk("Failed to send pwr message, %d\n", err);
+			LOG_WRN("Failed to send pwr message, %d\n", err);
 			return;
 		}
 	}
@@ -224,10 +229,10 @@ void frequency_counter(struct k_timer *work)
 {
 	float f = frequency / 6.0 * WIND_SCALE;
 	speed = (int)f;
-	printk("Windspeed %d ...\n", speed);
+	LOG_DBG("Windspeed %d ...\n", speed);
 	frequency = 0;
-//	turn_leds_off();
-    turn_leds_on_with_color(BLUE);
+	//	turn_leds_off();
+	turn_leds_on_with_color(BLUE);
 
 	// set_boost(false);
 

@@ -1,6 +1,8 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include "leds.h"
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(leds, LOG_LEVEL_INF);
 
 #define GPIO_NODE DT_NODELABEL(gpio0)
 #define BUTTON_NODE DT_ALIAS(sw0)
@@ -23,14 +25,9 @@ static struct gpio_dt_spec blue_led = GPIO_DT_SPEC_GET(BLUE_LED_NODE, gpios);
 
 static bool button_pressed = false;
 
-
-
 void button_pressed_callback(const struct device *gpiob, struct gpio_callback *cb, gpio_port_pins_t pins)
 {
     button_pressed = true;
-    
-
-
 }
 
 bool init_button(void)
@@ -38,8 +35,8 @@ bool init_button(void)
     int ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
     if (ret != 0)
     {
-        printk("Error %d: failed to configure %s pin %d\n",
-               ret, button.port->name, button.pin);
+        LOG_WRN("Error %d: failed to configure %s pin %d\n",
+                ret, button.port->name, button.pin);
 
         return false;
     }
@@ -47,8 +44,8 @@ bool init_button(void)
     ret = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_TO_ACTIVE);
     if (ret != 0)
     {
-        printk("Error %d: failed to configure interrupt on %s pin %d\n",
-               ret, button.port->name, button.pin);
+        LOG_WRN("Error %d: failed to configure interrupt on %s pin %d\n",
+                ret, button.port->name, button.pin);
 
         return false;
     }
@@ -65,7 +62,7 @@ void init_leds(void)
 
     if (!gpio_dev)
     {
-        printk("Error getting GPIO device binding\r\n");
+        LOG_WRN("Error getting GPIO device binding\r\n");
 
         return;
     }
@@ -88,7 +85,7 @@ void turn_leds_off(void)
 }
 
 void turn_leds_on_with_color(led_color_t color)
-{ 
+{
     switch (color)
     {
     case RED:
