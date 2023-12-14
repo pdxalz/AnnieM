@@ -33,9 +33,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 1.0,
-          "height": 1.7,
-          "width": 1.7
+          "drill": 2.2,
+          "height": 3.8,
+          "width": 3.8
         },
         "silk_line_width": 0.12,
         "silk_text_italic": false,
@@ -142,10 +142,7 @@
     "equivalence_files": []
   },
   "erc": {
-    "erc_exclusions": [
-      "lib_symbol_issues|2349500|1117600|6e9a2100-711e-4acf-aca4-85503ba11bf8|00000000-0000-0000-0000-000000000000",
-      "pin_to_pin|2425700|431800|8544b557-d81b-4d59-a8f4-37975a043f24|4e96df50-2e39-484f-8af7-ebfa3d9fe29f"
-    ],
+    "erc_exclusions": [],
     "meta": {
       "version": 0
     },
@@ -372,6 +369,24 @@
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
         "track_width": 0.25,
+        "via_diameter": 0.8,
+        "via_drill": 0.4,
+        "wire_width": 6.0
+      },
+      {
+        "bus_width": 12.0,
+        "clearance": 0.2,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "Power",
+        "nets": [],
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.381,
         "via_diameter": 0.8,
         "via_drill": 0.4,
         "wire_width": 6.0
