@@ -1466,7 +1466,7 @@
   (symbol (lib_id "Comparator:LM393") (at 176.53 74.93 0) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062da82e4)
-    (property "Reference" "U3" (id 0) (at 171.45 68.58 0))
+    (property "Reference" "U1" (id 0) (at 171.45 68.58 0))
     (property "Value" "LM393" (id 1) (at 179.07 71.12 0))
     (property "Footprint" "Package_DIP:DIP-8_W7.62mm_LongPads" (id 2) (at 176.53 74.93 0)
       (effects (font (size 1.27 1.27)) hide)
@@ -1487,7 +1487,7 @@
   (symbol (lib_id "Comparator:LM393") (at 179.07 110.49 0) (unit 2)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062da8e27)
-    (property "Reference" "U3" (id 0) (at 177.8 105.41 0))
+    (property "Reference" "U1" (id 0) (at 177.8 105.41 0))
     (property "Value" "LM393" (id 1) (at 179.07 103.4796 0)
       (effects (font (size 1.27 1.27)) hide)
     )
@@ -1510,7 +1510,7 @@
   (symbol (lib_id "Comparator:LM393") (at 177.8 74.93 0) (unit 3)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062da9720)
-    (property "Reference" "U3" (id 0) (at 176.53 78.74 0)
+    (property "Reference" "U1" (id 0) (at 176.53 78.74 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "LM393" (id 1) (at 191.77 85.09 0)
@@ -1535,7 +1535,7 @@
   (symbol (lib_id "Device:R") (at 156.21 86.36 0) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062dae2ae)
-    (property "Reference" "R7" (id 0) (at 157.988 85.1916 0)
+    (property "Reference" "R8" (id 0) (at 157.988 85.1916 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "10K" (id 1) (at 157.988 87.503 0)
@@ -1608,7 +1608,7 @@
   (symbol (lib_id "Device:R") (at 156.21 63.5 0) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062db5ff9)
-    (property "Reference" "R4" (id 0) (at 157.988 62.3316 0)
+    (property "Reference" "R7" (id 0) (at 157.988 62.3316 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "10K" (id 1) (at 157.48 64.77 0)
@@ -1643,7 +1643,7 @@
   (symbol (lib_id "Device:R") (at 147.32 67.31 270) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062db6f4e)
-    (property "Reference" "R3" (id 0) (at 147.32 64.77 90))
+    (property "Reference" "R4" (id 0) (at 147.32 64.77 90))
     (property "Value" "10K" (id 1) (at 147.32 67.31 90))
     (property "Footprint" "Resistor_SMD:R_0603_1608Metric" (id 2) (at 147.32 65.532 90)
       (effects (font (size 1.27 1.27)) hide)
@@ -1658,7 +1658,7 @@
   (symbol (lib_id "Device:C") (at 139.7 67.31 270) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062db7bb2)
-    (property "Reference" "C3" (id 0) (at 139.7 60.9092 90))
+    (property "Reference" "C4" (id 0) (at 139.7 60.9092 90))
     (property "Value" "10uf" (id 1) (at 139.7 63.2206 90))
     (property "Footprint" "Capacitor_SMD:C_0805_2012Metric" (id 2) (at 135.89 68.2752 0)
       (effects (font (size 1.27 1.27)) hide)
@@ -1673,7 +1673,7 @@
   (symbol (lib_id "Device:C") (at 139.7 82.55 270) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062db87b2)
-    (property "Reference" "C4" (id 0) (at 139.7 76.1492 90))
+    (property "Reference" "C5" (id 0) (at 139.7 76.1492 90))
     (property "Value" "10uf" (id 1) (at 139.7 78.4606 90))
     (property "Footprint" "Capacitor_SMD:C_0805_2012Metric" (id 2) (at 135.89 83.5152 0)
       (effects (font (size 1.27 1.27)) hide)
@@ -1704,7 +1704,7 @@
   (symbol (lib_id "Device:R") (at 167.64 113.03 270) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062dc2e30)
-    (property "Reference" "R9" (id 0) (at 166.37 115.57 90)
+    (property "Reference" "R11" (id 0) (at 166.37 115.57 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "10K" (id 1) (at 166.37 113.03 90)
@@ -1739,7 +1739,7 @@
   (symbol (lib_id "Device:C") (at 182.88 60.96 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062df170d)
-    (property "Reference" "C5" (id 0) (at 185.801 59.7916 0)
+    (property "Reference" "C8" (id 0) (at 185.801 59.7916 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "0.1uf" (id 1) (at 185.801 62.103 0)
@@ -1774,7 +1774,7 @@
   (symbol (lib_id "Device:C") (at 187.96 78.74 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062f7e590)
-    (property "Reference" "C9" (id 0) (at 190.881 77.5716 0)
+    (property "Reference" "C6" (id 0) (at 190.881 77.5716 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "0.1uf" (id 1) (at 190.881 79.883 0)
@@ -1809,7 +1809,7 @@
   (symbol (lib_id "Device:C") (at 165.1 86.36 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-000062f7f184)
-    (property "Reference" "C8" (id 0) (at 168.021 85.1916 0)
+    (property "Reference" "C7" (id 0) (at 168.021 85.1916 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "0.1uf" (id 1) (at 168.021 87.503 0)
@@ -1844,7 +1844,7 @@
   (symbol (lib_id "Connector_Generic:Conn_01x02") (at 130.81 73.66 0) (mirror y) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-00006451f645)
-    (property "Reference" "J2" (id 0) (at 130.81 81.28 0))
+    (property "Reference" "J1" (id 0) (at 130.81 81.28 0))
     (property "Value" "NRG400" (id 1) (at 130.81 78.74 0))
     (property "Footprint" "TerminalBlock_RND:TerminalBlock_RND_205-00232_1x02_P5.08mm_Horizontal" (id 2) (at 130.81 73.66 0)
       (effects (font (size 1.27 1.27)) hide)
@@ -1972,7 +1972,7 @@
   (symbol (lib_id "Device:R") (at 165.1 63.5 0) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 345749e3-4141-4073-8980-c0428fe516b9)
-    (property "Reference" "R1" (id 0) (at 166.878 62.3316 0)
+    (property "Reference" "R9" (id 0) (at 166.878 62.3316 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100K" (id 1) (at 166.878 64.643 0)
@@ -1991,7 +1991,7 @@
   (symbol (lib_id "ICARUS_IOT_BOARD_TH:ICARUS_IOT_BOARD_THaz") (at 234.95 111.76 0) (unit 1)
     (in_bom yes) (on_board yes) (fields_autoplaced)
     (uuid 3af946df-5faa-45c3-9ec5-2fa83de78da5)
-    (property "Reference" "U2" (id 0) (at 234.95 78.74 0))
+    (property "Reference" "U3" (id 0) (at 234.95 78.74 0))
     (property "Value" "ICARUS_IOT_BOARD_THaz" (id 1) (at 234.95 81.28 0))
     (property "Footprint" "ICARUS_IOT_BOARD_TH:MODULE_ICARUS_IOT_BOARD_THaz" (id 2) (at 234.95 111.76 0)
       (effects (font (size 1.27 1.27)) (justify bottom) hide)
@@ -2071,7 +2071,7 @@
   (symbol (lib_id "Device:C") (at 270.51 85.09 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 3afb3e20-e544-4235-b23f-a9c1a800b7a0)
-    (property "Reference" "C14" (id 0) (at 273.431 83.9216 0)
+    (property "Reference" "C3" (id 0) (at 273.431 83.9216 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "0.1uf" (id 1) (at 273.431 86.233 0)
@@ -2232,7 +2232,7 @@
   (symbol (lib_id "Device:C") (at 270.51 97.79 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 60352961-f267-4820-a88b-2587f23470b3)
-    (property "Reference" "C15" (id 0) (at 273.431 96.6216 0)
+    (property "Reference" "C1" (id 0) (at 273.431 96.6216 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "0.1uf" (id 1) (at 273.431 98.933 0)
@@ -2251,7 +2251,7 @@
   (symbol (lib_id "Device:C") (at 254 39.37 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 6c3b3098-6a6d-42fd-a825-4067a051ea66)
-    (property "Reference" "C6" (id 0) (at 256.921 38.2016 0)
+    (property "Reference" "C10" (id 0) (at 256.921 38.2016 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "0.1uf" (id 1) (at 256.921 40.513 0)
@@ -2398,7 +2398,7 @@
   )
 
   (symbol (lib_id "Mechanical:MountingHole_Pad") (at 219.71 153.67 0) (unit 1)
-    (in_bom yes) (on_board yes) (fields_autoplaced)
+    (in_bom no) (on_board yes) (fields_autoplaced)
     (uuid 8a00f511-38e9-4907-b76c-c285315d780e)
     (property "Reference" "H1" (id 0) (at 222.25 151.1299 0)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -2434,7 +2434,7 @@
   (symbol (lib_id "Connector_Generic:Conn_01x03") (at 124.46 36.83 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 8b627595-d1ad-44e2-8936-12cb64c71265)
-    (property "Reference" "J1" (id 0) (at 120.65 35.56 0))
+    (property "Reference" "J2" (id 0) (at 120.65 35.56 0))
     (property "Value" "NRG200P" (id 1) (at 124.46 30.48 0))
     (property "Footprint" "TerminalBlock_RND:TerminalBlock_RND_205-00233_1x03_P5.08mm_Horizontal" (id 2) (at 124.46 36.83 0)
       (effects (font (size 1.27 1.27)) hide)
@@ -2498,7 +2498,7 @@
   (symbol (lib_id "Device:C") (at 90.17 142.24 0) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 9968ba17-5245-4510-be2b-ee3ff19eb186)
-    (property "Reference" "C10" (id 0) (at 85.09 140.97 0))
+    (property "Reference" "C12" (id 0) (at 85.09 140.97 0))
     (property "Value" "1uf" (id 1) (at 85.09 143.51 0))
     (property "Footprint" "Capacitor_SMD:C_0805_2012Metric" (id 2) (at 91.1352 146.05 0)
       (effects (font (size 1.27 1.27)) hide)
@@ -2511,7 +2511,7 @@
   )
 
   (symbol (lib_id "Mechanical:MountingHole_Pad") (at 227.33 153.67 0) (unit 1)
-    (in_bom yes) (on_board yes) (fields_autoplaced)
+    (in_bom no) (on_board yes) (fields_autoplaced)
     (uuid 9f625497-236f-4916-a459-fd461b31c7fd)
     (property "Reference" "H2" (id 0) (at 229.87 151.1299 0)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -2562,7 +2562,7 @@
   (symbol (lib_id "Device:C") (at 146.05 40.64 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid c771b02e-27a1-4c13-8109-268a26c1dd90)
-    (property "Reference" "C1" (id 0) (at 149.86 40.64 0))
+    (property "Reference" "C2" (id 0) (at 149.86 40.64 0))
     (property "Value" "10uf" (id 1) (at 151.13 43.18 0))
     (property "Footprint" "Capacitor_SMD:C_0805_2012Metric" (id 2) (at 145.0848 36.83 0)
       (effects (font (size 1.27 1.27)) hide)
@@ -2577,7 +2577,7 @@
   (symbol (lib_id "Device:R") (at 137.16 34.29 90) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid c9b1f32c-bc96-4ee4-9069-c41b35fa9dce)
-    (property "Reference" "R2" (id 0) (at 138.43 31.75 90)
+    (property "Reference" "R1" (id 0) (at 138.43 31.75 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "10k" (id 1) (at 138.43 34.29 90)
@@ -2596,7 +2596,7 @@
   (symbol (lib_id "BME688:BME688az") (at 227.33 40.64 0) (unit 1)
     (in_bom yes) (on_board yes) (fields_autoplaced)
     (uuid cea0f9e4-cd75-4b1a-93a0-78e543a00168)
-    (property "Reference" "U1" (id 0) (at 227.33 25.4 0))
+    (property "Reference" "U2" (id 0) (at 227.33 25.4 0))
     (property "Value" "BME688az" (id 1) (at 227.33 27.94 0))
     (property "Footprint" "BME688:IC_BME688" (id 2) (at 227.33 40.64 0)
       (effects (font (size 1.27 1.27)) (justify bottom) hide)
@@ -2688,7 +2688,7 @@
   (symbol (lib_id "Device:R") (at 137.16 36.83 90) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid d63233ab-9ad0-4328-bef8-91e7b6f2982b)
-    (property "Reference" "R8" (id 0) (at 137.16 39.37 90)
+    (property "Reference" "R2" (id 0) (at 137.16 39.37 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100k" (id 1) (at 139.7 36.83 90)
@@ -2707,7 +2707,7 @@
   (symbol (lib_id "Device:R") (at 137.16 44.45 90) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid e0207eaa-3301-4772-a50e-fb4c3ab37719)
-    (property "Reference" "R13" (id 0) (at 133.35 46.99 90)
+    (property "Reference" "R3" (id 0) (at 133.35 46.99 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "270" (id 1) (at 138.43 44.45 90)
@@ -2760,7 +2760,7 @@
   (symbol (lib_id "Device:C") (at 257.81 78.74 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid ef3e95d2-8dd3-47a8-8d10-6ef40319c31f)
-    (property "Reference" "C13" (id 0) (at 260.731 77.5716 0)
+    (property "Reference" "C9" (id 0) (at 260.731 77.5716 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "0.1uf" (id 1) (at 260.731 79.883 0)
@@ -2902,41 +2902,41 @@
     (path "/00000000-0000-0000-0000-000062f7f6fb"
       (reference "#PWR0122") (unit 1) (value "GND") (footprint "")
     )
+    (path "/60352961-f267-4820-a88b-2587f23470b3"
+      (reference "C1") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
+    )
     (path "/c771b02e-27a1-4c13-8109-268a26c1dd90"
-      (reference "C1") (unit 1) (value "10uf") (footprint "Capacitor_SMD:C_0805_2012Metric")
+      (reference "C2") (unit 1) (value "10uf") (footprint "Capacitor_SMD:C_0805_2012Metric")
+    )
+    (path "/3afb3e20-e544-4235-b23f-a9c1a800b7a0"
+      (reference "C3") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
     )
     (path "/00000000-0000-0000-0000-000062db7bb2"
-      (reference "C3") (unit 1) (value "10uf") (footprint "Capacitor_SMD:C_0805_2012Metric")
-    )
-    (path "/00000000-0000-0000-0000-000062db87b2"
       (reference "C4") (unit 1) (value "10uf") (footprint "Capacitor_SMD:C_0805_2012Metric")
     )
-    (path "/00000000-0000-0000-0000-000062df170d"
-      (reference "C5") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
+    (path "/00000000-0000-0000-0000-000062db87b2"
+      (reference "C5") (unit 1) (value "10uf") (footprint "Capacitor_SMD:C_0805_2012Metric")
     )
-    (path "/6c3b3098-6a6d-42fd-a825-4067a051ea66"
+    (path "/00000000-0000-0000-0000-000062f7e590"
       (reference "C6") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
     )
     (path "/00000000-0000-0000-0000-000062f7f184"
+      (reference "C7") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
+    )
+    (path "/00000000-0000-0000-0000-000062df170d"
       (reference "C8") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
     )
-    (path "/00000000-0000-0000-0000-000062f7e590"
+    (path "/ef3e95d2-8dd3-47a8-8d10-6ef40319c31f"
       (reference "C9") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
     )
-    (path "/9968ba17-5245-4510-be2b-ee3ff19eb186"
-      (reference "C10") (unit 1) (value "1uf") (footprint "Capacitor_SMD:C_0805_2012Metric")
+    (path "/6c3b3098-6a6d-42fd-a825-4067a051ea66"
+      (reference "C10") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
     )
     (path "/4e0b49eb-89cd-46b4-bb85-45548e8e6e69"
       (reference "C11") (unit 1) (value "10uf") (footprint "Capacitor_SMD:C_0805_2012Metric")
     )
-    (path "/ef3e95d2-8dd3-47a8-8d10-6ef40319c31f"
-      (reference "C13") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
-    )
-    (path "/3afb3e20-e544-4235-b23f-a9c1a800b7a0"
-      (reference "C14") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
-    )
-    (path "/60352961-f267-4820-a88b-2587f23470b3"
-      (reference "C15") (unit 1) (value "0.1uf") (footprint "Capacitor_SMD:C_0603_1608Metric")
+    (path "/9968ba17-5245-4510-be2b-ee3ff19eb186"
+      (reference "C12") (unit 1) (value "1uf") (footprint "Capacitor_SMD:C_0805_2012Metric")
     )
     (path "/8a00f511-38e9-4907-b76c-c285315d780e"
       (reference "H1") (unit 1) (value " ") (footprint "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad")
@@ -2944,11 +2944,11 @@
     (path "/9f625497-236f-4916-a459-fd461b31c7fd"
       (reference "H2") (unit 1) (value " ") (footprint "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad")
     )
-    (path "/8b627595-d1ad-44e2-8936-12cb64c71265"
-      (reference "J1") (unit 1) (value "NRG200P") (footprint "TerminalBlock_RND:TerminalBlock_RND_205-00233_1x03_P5.08mm_Horizontal")
-    )
     (path "/00000000-0000-0000-0000-00006451f645"
-      (reference "J2") (unit 1) (value "NRG400") (footprint "TerminalBlock_RND:TerminalBlock_RND_205-00232_1x02_P5.08mm_Horizontal")
+      (reference "J1") (unit 1) (value "NRG400") (footprint "TerminalBlock_RND:TerminalBlock_RND_205-00232_1x02_P5.08mm_Horizontal")
+    )
+    (path "/8b627595-d1ad-44e2-8936-12cb64c71265"
+      (reference "J2") (unit 1) (value "NRG200P") (footprint "TerminalBlock_RND:TerminalBlock_RND_205-00233_1x03_P5.08mm_Horizontal")
     )
     (path "/061ec080-ec4d-4857-a2f4-502476cc97c7"
       (reference "J3") (unit 1) (value "SOLAR") (footprint "Connector_JST:JST_XA_B02B-XASK-1_1x02_P2.50mm_Vertical")
@@ -2959,16 +2959,16 @@
     (path "/507f5284-93cc-4aa3-ad9c-67576b179504"
       (reference "J5") (unit 1) (value "Ext_3.3V") (footprint "Connector_PinSocket_2.54mm:PinSocket_1x01_P2.54mm_Vertical")
     )
-    (path "/345749e3-4141-4073-8980-c0428fe516b9"
-      (reference "R1") (unit 1) (value "100K") (footprint "Resistor_SMD:R_0603_1608Metric")
-    )
     (path "/c9b1f32c-bc96-4ee4-9069-c41b35fa9dce"
-      (reference "R2") (unit 1) (value "10k") (footprint "Resistor_SMD:R_0603_1608Metric")
+      (reference "R1") (unit 1) (value "10k") (footprint "Resistor_SMD:R_0603_1608Metric")
+    )
+    (path "/d63233ab-9ad0-4328-bef8-91e7b6f2982b"
+      (reference "R2") (unit 1) (value "100k") (footprint "Resistor_SMD:R_0603_1608Metric")
+    )
+    (path "/e0207eaa-3301-4772-a50e-fb4c3ab37719"
+      (reference "R3") (unit 1) (value "270") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
     (path "/00000000-0000-0000-0000-000062db6f4e"
-      (reference "R3") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0603_1608Metric")
-    )
-    (path "/00000000-0000-0000-0000-000062db5ff9"
       (reference "R4") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
     (path "/00000000-0000-0000-0000-000062db1fcf"
@@ -2977,35 +2977,35 @@
     (path "/00000000-0000-0000-0000-000062db17d2"
       (reference "R6") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
-    (path "/00000000-0000-0000-0000-000062dae2ae"
+    (path "/00000000-0000-0000-0000-000062db5ff9"
       (reference "R7") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
-    (path "/d63233ab-9ad0-4328-bef8-91e7b6f2982b"
-      (reference "R8") (unit 1) (value "100k") (footprint "Resistor_SMD:R_0603_1608Metric")
+    (path "/00000000-0000-0000-0000-000062dae2ae"
+      (reference "R8") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
-    (path "/00000000-0000-0000-0000-000062dc2e30"
-      (reference "R9") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0603_1608Metric")
+    (path "/345749e3-4141-4073-8980-c0428fe516b9"
+      (reference "R9") (unit 1) (value "100K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
     (path "/bbc3e4fe-b40f-4f24-b198-21d5f04f0ba7"
       (reference "R10") (unit 1) (value "100K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
-    (path "/e0207eaa-3301-4772-a50e-fb4c3ab37719"
-      (reference "R13") (unit 1) (value "270") (footprint "Resistor_SMD:R_0603_1608Metric")
-    )
-    (path "/cea0f9e4-cd75-4b1a-93a0-78e543a00168"
-      (reference "U1") (unit 1) (value "BME688az") (footprint "BME688:IC_BME688")
-    )
-    (path "/3af946df-5faa-45c3-9ec5-2fa83de78da5"
-      (reference "U2") (unit 1) (value "ICARUS_IOT_BOARD_THaz") (footprint "ICARUS_IOT_BOARD_TH:MODULE_ICARUS_IOT_BOARD_THaz")
+    (path "/00000000-0000-0000-0000-000062dc2e30"
+      (reference "R11") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
     (path "/00000000-0000-0000-0000-000062da82e4"
-      (reference "U3") (unit 1) (value "LM393") (footprint "Package_DIP:DIP-8_W7.62mm_LongPads")
+      (reference "U1") (unit 1) (value "LM393") (footprint "Package_DIP:DIP-8_W7.62mm_LongPads")
     )
     (path "/00000000-0000-0000-0000-000062da8e27"
-      (reference "U3") (unit 2) (value "LM393") (footprint "Package_DIP:DIP-8_W7.62mm_LongPads")
+      (reference "U1") (unit 2) (value "LM393") (footprint "Package_DIP:DIP-8_W7.62mm_LongPads")
     )
     (path "/00000000-0000-0000-0000-000062da9720"
-      (reference "U3") (unit 3) (value "LM393") (footprint "Package_DIP:DIP-8_W7.62mm_LongPads")
+      (reference "U1") (unit 3) (value "LM393") (footprint "Package_DIP:DIP-8_W7.62mm_LongPads")
+    )
+    (path "/cea0f9e4-cd75-4b1a-93a0-78e543a00168"
+      (reference "U2") (unit 1) (value "BME688az") (footprint "BME688:IC_BME688")
+    )
+    (path "/3af946df-5faa-45c3-9ec5-2fa83de78da5"
+      (reference "U3") (unit 1) (value "ICARUS_IOT_BOARD_THaz") (footprint "ICARUS_IOT_BOARD_TH:MODULE_ICARUS_IOT_BOARD_THaz")
     )
     (path "/42f2ee96-f864-4cc2-92ca-54d6d98432c6"
       (reference "U4") (unit 1) (value "RT9080-33GJ5") (footprint "Package_TO_SOT_SMD:TSOT-23-5")
