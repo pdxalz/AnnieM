@@ -28,9 +28,7 @@
             var wind_data = msg.payloadString;
             console.log("dest: :" + msg.destinationName + " *** " + msg.payloadString);
 
-            if (msg.destinationName.search("recent") >= 0) {
-                addDataToRecent(wind_data);
-            } else {
+            if (msg.destinationName.search("wind") >= 0) {
                 plotWindData(wind_data);
             }
         }
@@ -66,11 +64,9 @@
             var devInfo = document.getElementById("devInfo");
 
             recentWind.innerHTML =
-                "<h2><small>" + recent_json.time + "</small><br>" +
+                "<h2><small>" + time.getMonth() + "/" + time.getDate() + " " + time.getHours() + ":" + time.getMinutes() + "</small><br>" +
                 recent_json.sp + "<small>mph</small>  " + directionString(recent_json.dir) +
                 "<small> Gust: </small> " + maxGust;
-
-            //            devInfo.innerHTML = "<p> battery: " + recent_json.mv + "</p>";
         }
 
         // Hack to make degree data fit into windspeed data, North is center of chart
@@ -101,8 +97,7 @@
             var time = new Date(wind_json.time);
             maxGust = 0;
 
-            time.setTime(time.getTime() + (7 * 60 * 60 * 1000) + (30 * 24 * 60 * 60 * 1000));  // Need to remove UTC offset in Annie code
-            //           console.log("timestamp: " + wind_json.time + "   latest: ", latestTime);
+            //            console.log("timestamp: " + time.getTime() + "   latest: ", Date.now());
 
             // The windData array gets filled with the wind messages. 
             // The sample hour is the index to the windData array.  
@@ -113,7 +108,8 @@
             if (time > latestTime) {
                 latestTime = time;
             }
-
+            console.log("winddata: " + windData);
+            console.log("timediff:" + time.getTime() + "  " + Date.now() + " " + (Date.now() - time.getTime()));
             // check for corrupted data, older than two days ago
             if (time.getTime() < (Date.now() - (2 * 24 * 60 * 60 * 1000))) {
                 for (var i = windData[hour].length - 1; i >= 0; --i) {
@@ -149,7 +145,17 @@
                 }
             }
 
-            var gust = document.getElementById("max-gust");
+            //            var gust = document.getElementById("max-gust");
+            var last = windData[hour].length - 1;
+            var recentWind = document.getElementById("recent-wind");
+            recentWind.innerHTML =
+                "<h2><small>" + (latestTime.getMonth() + 1) + "/" + latestTime.getDate() + " " +
+                latestTime.getHours() + ":" + latestTime.getMinutes().toString().padStart(2, '0') + "</small><br>" +
+                windData[hour][last][0] + "<small>mph</small>  " + windData[hour][last][1] + //directionString(windData[hour][last][1]) +
+                "<small> Gust: </small> " + maxGust;
+
+            //           console.log("recent:  " + hour + " " + last);
+            //           console.log("data:" + windData[hour]);
 
             chart.data.datasets[0].data = speedData;
             chart.data.datasets[1].data = dirData;
@@ -283,4 +289,3 @@
 </body>
 
 </html>
-

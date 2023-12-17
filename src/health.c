@@ -6,8 +6,8 @@
 
 #include "leds.h"
 #include "health.h"
-#include "mqtt_connection.h"
 #include "adc.h"
+#include "mqtt_connection.h"
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(health, LOG_LEVEL_INF);
 
@@ -46,7 +46,7 @@ static void health_timer_callback(struct k_timer *work)
 
 void report_power(uint8_t *buf)
 {
-//	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &volts[n_pwr]);
+	//	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &volts[n_pwr]);
 	current_volts = get_battery_voltage();
 	volts[n_pwr] = current_volts;
 
@@ -72,13 +72,13 @@ void report_power(uint8_t *buf)
 static void health_worker_callback(struct k_work *timer_id)
 {
 	int err;
-	time_t now;
-	now = time(NULL);
-	struct tm tm;
-	localtime_r(&now, &tm);
+	// time_t now;
+	// now = time(NULL);
+	// struct tm tm;
+	// localtime_r(&now, &tm);
 
-	int hour = tm.tm_hour;
-	int minute = tm.tm_min;
+	// int hour = tm.tm_hour;
+	// int minute = tm.tm_min;
 
 	//	printk("health worker\n");
 
@@ -100,7 +100,6 @@ int FahrenheitToCelsius(float FahrenTemp)
 	return (FahrenTemp - 32) * 5 / 9;
 }
 
-
 #define BATVOLT_R1 4.7f
 #define BATVOLT_R2 10.0f
 
@@ -111,7 +110,7 @@ int get_battery_voltage()
 
 	get_adc_voltage(ADC_BATTERY_VOLTAGE_ID, &volts);
 	corrected = (volts * ((BATVOLT_R1 + BATVOLT_R2) / BATVOLT_R2));
-	LOG_DBG("battery %d  %d\n",  volts, corrected);
+	LOG_DBG("battery %d  %d\n", volts, corrected);
 	return corrected;
 }
 

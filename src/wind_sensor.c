@@ -85,7 +85,7 @@ static void wind_check_callback(struct k_timer *work)
 static void build_array_string(uint8_t *buf, struct tm *t)
 {
 
-	buf += sprintf(buf, "{\"time\":\"%04d-%02d-%02dT%02d:%02d:%02d.000Z\", ", (t->tm_year + 1900), t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+	buf += sprintf(buf, "{\"time\":\"%04d-%02d-%02dT%02d:%02dZ\", ", (t->tm_year + 1900), t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min);
 	buf += sprintf(buf, "\"wind\":[");
 
 	for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
@@ -158,7 +158,7 @@ static void speed_calc_callback(struct k_work *timer_id)
 	time_t now;
 	now = time(NULL);
 	struct tm tm;
-	localtime_r(&now, &tm);
+	gmtime_r(&now, &tm);
 
 	clear_broker_history();
 
@@ -205,25 +205,10 @@ static void speed_calc_callback(struct k_work *timer_id)
 			LOG_WRN("Failed to send message, %d\n", err);
 			return;
 		}
-
-		uint16_t current_volts;
-
-		current_volts = get_battery_voltage();
-
-		sprintf(topic, "%s/recent", CONFIG_MQTT_PRIMARY_TOPIC);
-		sprintf(wmsg, "{\"time\":\"%2d/%2d %2d:%02d\",\"sp\":\"%d\",\"dir\":\"%d\",\"mv\":\"%d\"}",
-				tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, speed, wind_direction, current_volts);
-		err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
-						   wmsg, strlen(wmsg), topic, 1);
-		if (err)
-		{
-			LOG_WRN("Failed to send pwr message, %d\n", err);
-			return;
-		}
 	}
 }
 
-// Calculates the wind speed from the number of pulses,
+// Calculates the wind speed from the number of pulses, and resets count for next time
 // then submit a job to send the MQTT data
 void frequency_counter(struct k_timer *work)
 {
@@ -244,6 +229,7 @@ void frequency_counter(struct k_timer *work)
 void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
 	int64_t time = k_uptime_get();
+	// filter out sensor glitches
 	if ((time - lasttime) > 10)
 	{
 		frequency++;
