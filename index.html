@@ -52,24 +52,7 @@
             return dir_dict[dir_index] + " " + "<small>" + (rem < 0 ? ' ' : '+') + rem + "&#176</small>";
         }
 
-        // Update the HTML reporting the most recent data
-        function addDataToRecent(recent_data) {
-            try {
-                recent_json = JSON.parse(recent_data);
-            }
-            catch (err) {
-                console.log(err.message);
-            }
-            var recentWind = document.getElementById("recent-wind");
-            var devInfo = document.getElementById("devInfo");
-
-            recentWind.innerHTML =
-                "<h2><small>" + time.getMonth() + "/" + time.getDate() + " " + time.getHours() + ":" + time.getMinutes() + "</small><br>" +
-                recent_json.sp + "<small>mph</small>  " + directionString(recent_json.dir) +
-                "<small> Gust: </small> " + maxGust;
-        }
-
-        // Hack to make degree data fit into windspeed data, North is center of chart
+         // Hack to make degree data fit into windspeed data, North is center of chart
         function northCenter(degrees) {
             return ((degrees + 180) % 360) / 9;
         }
@@ -151,7 +134,7 @@
             recentWind.innerHTML =
                 "<h2><small>" + (latestTime.getMonth() + 1) + "/" + latestTime.getDate() + " " +
                 latestTime.getHours() + ":" + latestTime.getMinutes().toString().padStart(2, '0') + "</small><br>" +
-                windData[hour][last][0] + "<small>mph</small>  " + windData[hour][last][1] + //directionString(windData[hour][last][1]) +
+                windData[hour][last][0] + "<small>mph</small>  " + directionString(windData[hour][last][1]) +
                 "<small> Gust: </small> " + maxGust;
 
             //           console.log("recent:  " + hour + " " + last);
