@@ -16,6 +16,11 @@ static uint8_t payload_buf[CONFIG_MQTT_PAYLOAD_BUFFER_SIZE];
 /* MQTT Broker details. */
 static struct sockaddr_storage broker;
 
+/* The mqtt client struct */
+static struct mqtt_client client;
+/* File descriptor */
+static struct pollfd fds;
+
 // LOG_MODULE_DECLARE(AnnieM);
 LOG_MODULE_REGISTER(mqtt_con, LOG_LEVEL_INF);
 
@@ -23,7 +28,6 @@ LOG_MODULE_REGISTER(mqtt_con, LOG_LEVEL_INF);
 #define SAMPLE_FAST "fast"
 #define SAMPLE_SLOW "slow"
 #define REPORT "report"
-
 
 /**@brief Function to get the payload of recived data.
  */
@@ -99,7 +103,7 @@ static void data_print(uint8_t *prefix, uint8_t *data, size_t len)
 /**@brief Function to publish data on the configured topic
  */
 /* STEP 7.1 - Define the function data_publish() to publish data */
-int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
+int data_publish(enum mqtt_qos qos,
 				 uint8_t *data, size_t len, uint8_t *topic, uint8_t retain)
 {
 	struct mqtt_publish_param param;
@@ -116,7 +120,7 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 		data_print("Pub: ", data, len);
 	}
 	//	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
-	return mqtt_publish(c, &param);
+	return mqtt_publish(&client, &param);
 }
 
 /**@brief MQTT client event handler
@@ -164,7 +168,6 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 			if (err >= 0)
 			{
 				data_print("Received: ", payload_buf, p->message.payload.len);
-
 			}
 			/* STEP 6.3 - On failed extraction of data */
 			// On failed extraction of data - Payload buffer is smaller than the recived data . Increase
@@ -313,14 +316,15 @@ exit:
 	return client_id;
 }
 
-/**@brief Initialize the MQTT client structure
- */
-/* STEP 3 - Define the function client_init() to initialize the MQTT client instance.  */
-int client_init(struct mqtt_client *client)
+	/**@brief Initialize the MQTT client structure
+	 */
+	/* STEP 3 - Define the function client_init() to initialize the MQTT client instance.  */
+	int	client_init()
 {
 	int err;
+
 	/* initializes the client instance. */
-	mqtt_client_init(client);
+	mqtt_client_init(&client);
 	/* Resolves the configured hostname and initializes the MQTT broker structure */
 	err = broker_init();
 	if (err)
@@ -329,21 +333,96 @@ int client_init(struct mqtt_client *client)
 		return err;
 	}
 	/* MQTT client configuration */
-	client->broker = &broker;
-	client->evt_cb = mqtt_evt_handler;
-	client->client_id.utf8 = client_id_get();
-	client->client_id.size = strlen(client->client_id.utf8);
-	client->password = NULL;
-	client->user_name = NULL;
-	client->protocol_version = MQTT_VERSION_3_1_1;
+	client.broker = &broker;
+	client.evt_cb = mqtt_evt_handler;
+	client.client_id.utf8 = client_id_get();
+	client.client_id.size = strlen(client.client_id.utf8);
+	client.password = NULL;
+	client.user_name = NULL;
+	client.protocol_version = MQTT_VERSION_3_1_1;
 	/* MQTT buffers configuration */
-	client->rx_buf = rx_buffer;
-	client->rx_buf_size = sizeof(rx_buffer);
-	client->tx_buf = tx_buffer;
-	client->tx_buf_size = sizeof(tx_buffer);
+	client.rx_buf = rx_buffer;
+	client.rx_buf_size = sizeof(rx_buffer);
+	client.tx_buf = tx_buffer;
+	client.tx_buf_size = sizeof(tx_buffer);
 	/* We are not using TLS in Exercise 1 */
-	client->transport.type = MQTT_TRANSPORT_NON_SECURE;
+	client.transport.type = MQTT_TRANSPORT_NON_SECURE;
 	return err;
+}
+
+void mqtt_idleloop()
+{
+	int err;
+	uint32_t connect_attempt = 0;
+
+do_connect:
+	if (connect_attempt++ > 0)
+	{
+		LOG_INF("Reconnecting in %d seconds...\n",
+				CONFIG_MQTT_RECONNECT_DELAY_S);
+		k_sleep(K_SECONDS(CONFIG_MQTT_RECONNECT_DELAY_S));
+	}
+	err = mqtt_connect(&client);
+	if (err)
+	{
+		LOG_WRN("Error in mqtt_connect: %d\n", err);
+		goto do_connect;
+	}
+
+	err = fds_init(&client, &fds);
+	if (err)
+	{
+		LOG_WRN("Error in fds_init: %d\n", err);
+		return;
+	}
+
+	while (1)
+	{
+		err = poll(&fds, 1, mqtt_keepalive_time_left(&client));
+		if (err < 0)
+		{
+			LOG_WRN("Error in poll(): %d\n", errno);
+			break;
+		}
+
+		err = mqtt_live(&client);
+		if ((err != 0) && (err != -EAGAIN))
+		{
+			LOG_WRN("Error in mqtt_live: %d\n", err);
+			break;
+		}
+
+		if ((fds.revents & POLLIN) == POLLIN)
+		{
+			err = mqtt_input(&client);
+			if (err != 0)
+			{
+				LOG_WRN("Error in mqtt_input: %d\n", err);
+				break;
+			}
+		}
+
+		if ((fds.revents & POLLERR) == POLLERR)
+		{
+			LOG_WRN("POLLERR\n");
+			break;
+		}
+
+		if ((fds.revents & POLLNVAL) == POLLNVAL)
+		{
+			LOG_WRN("POLLNVAL\n");
+			break;
+		}
+	}
+
+	LOG_INF("Disconnecting MQTT client\n");
+
+	err = mqtt_disconnect(&client);
+	if (err)
+	{
+		LOG_WRN("Could not disconnect MQTT client: %d\n", err);
+	}
+	goto do_connect;
 }
 
 /**@brief Initialize the file descriptor structure used by poll.

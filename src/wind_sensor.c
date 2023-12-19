@@ -45,8 +45,6 @@ struct w_sensor
 	uint16_t direction;
 } wind_sensor[12];
 
-/* The mqtt client struct */
-static struct mqtt_client *_pclient;
 static struct gpio_callback windspeed_cb_data;
 
 static void sensor_sample_timer_cb(struct k_timer *work);
@@ -156,7 +154,7 @@ static void clear_broker_history()
 		for (int i = 0; i < 24; ++i)
 		{
 			sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, i);
-			int err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+			int err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
 								   "", 0, topic, 1);
 			if (err)
 			{
@@ -227,7 +225,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 
 		int err;
 		oldspeed = speed;
-		err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
 						   wmsg, strlen(wmsg), topic, 1);
 		if (err)
 		{
@@ -247,9 +245,8 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 // Public functions
 //************************
 
-int init_wind_sensor(struct mqtt_client *c)
+int init_wind_sensor()
 {
-	_pclient = c;
 	int err;
 	if (!device_is_ready(windspeed.port))
 	{

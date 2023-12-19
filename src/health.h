@@ -5,7 +5,7 @@
 
 void publish_health_data();
 
-void init_health(struct mqtt_client *c);
+void init_health();
 
 
 #endif /* _HEALTH_H_ */

@@ -8,15 +8,17 @@
 #define CLIENT_ID_LEN sizeof("nrf-") + IMEI_LEN
 /**@brief Initialize the MQTT client structure
  */
-int client_init(struct mqtt_client *client);
+int client_init();
 
 /**@brief Initialize the file descriptor structure used by poll.
  */
 int fds_init(struct mqtt_client *c, struct pollfd *fds);
 
+void mqtt_idleloop();
+
 /**@brief Function to publish data on the configured topic
  */
-int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
+int data_publish(enum mqtt_qos qos,
 				 uint8_t *data, size_t len, uint8_t *topic, uint8_t retain);
 
 int get_sample_time();

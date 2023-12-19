@@ -24,38 +24,9 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 extern int setenv(const char *name, const char *value, int overwrite);
 
-/* The mqtt client struct */
-static struct mqtt_client client;
-/* File descriptor */
-static struct pollfd fds;
-
 static K_SEM_DEFINE(lte_connected, 0, 1);
 
 #define TOPIC_STR "zimbuktu2/testing"
-
-// unused test code
-// work thread for test message
-static void mm_callback(struct k_work *timer_id)
-{
-    int err = data_publish(&client, MQTT_QOS_1_AT_LEAST_ONCE,
-                           CONFIG_BUTTON_EVENT_PUBLISH_MSG, sizeof(CONFIG_BUTTON_EVENT_PUBLISH_MSG) - 1, TOPIC_STR, 1);
-    if (err)
-    {
-        turn_leds_on_with_color(MAGENTA);
-        LOG_WRN("Failed to send message, %d", err);
-        return;
-    }
-    turn_leds_on_with_color(BLUE);
-}
-static K_WORK_DEFINE(mm_work, mm_callback);
-
-// unused test code
-// test message sent on button press
-void send_mqtt(void)
-{
-    turn_leds_on_with_color(CYAN);
-    k_work_submit(&mm_work);
-}
 
 static void lte_handler(const struct lte_lc_evt *const evt)
 {
@@ -101,15 +72,14 @@ void main(void)
     turn_leds_on_with_color(WHITE);
 
     int err;
-    uint32_t connect_attempt = 0;
-
+ 
     init_adc();
 
     modem_configure();
 
     turn_leds_on_with_color(YELLOW);
 
-    err = client_init(&client);
+    err = client_init();
     if (err)
     {
         LOG_ERR("Failed to initialize MQTT client: %d\n", err);
@@ -119,75 +89,8 @@ void main(void)
     struct _reent r;
     _tzset_r(&r);
 
-    init_wind_sensor(&client);
-    init_health(&client);
+    init_wind_sensor();
+    init_health();
 
-do_connect:
-    if (connect_attempt++ > 0)
-    {
-        LOG_INF("Reconnecting in %d seconds...\n",
-                CONFIG_MQTT_RECONNECT_DELAY_S);
-        k_sleep(K_SECONDS(CONFIG_MQTT_RECONNECT_DELAY_S));
-    }
-    err = mqtt_connect(&client);
-    if (err)
-    {
-        LOG_WRN("Error in mqtt_connect: %d\n", err);
-        goto do_connect;
-    }
-
-    err = fds_init(&client, &fds);
-    if (err)
-    {
-        LOG_WRN("Error in fds_init: %d\n", err);
-        return;
-    }
-
-    while (1)
-    {
-        err = poll(&fds, 1, mqtt_keepalive_time_left(&client));
-        if (err < 0)
-        {
-            LOG_WRN("Error in poll(): %d\n", errno);
-            break;
-        }
-
-        err = mqtt_live(&client);
-        if ((err != 0) && (err != -EAGAIN))
-        {
-            LOG_WRN("Error in mqtt_live: %d\n", err);
-            break;
-        }
-
-        if ((fds.revents & POLLIN) == POLLIN)
-        {
-            err = mqtt_input(&client);
-            if (err != 0)
-            {
-                LOG_WRN("Error in mqtt_input: %d\n", err);
-                break;
-            }
-        }
-
-        if ((fds.revents & POLLERR) == POLLERR)
-        {
-            LOG_WRN("POLLERR\n");
-            break;
-        }
-
-        if ((fds.revents & POLLNVAL) == POLLNVAL)
-        {
-            LOG_WRN("POLLNVAL\n");
-            break;
-        }
-    }
-
-    LOG_INF("Disconnecting MQTT client\n");
-
-    err = mqtt_disconnect(&client);
-    if (err)
-    {
-        LOG_WRN("Could not disconnect MQTT client: %d\n", err);
-    }
-    goto do_connect;
+    mqtt_idleloop();  // does not return
 }

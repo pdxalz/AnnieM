@@ -14,8 +14,6 @@ LOG_MODULE_REGISTER(health, LOG_LEVEL_INF);
 extern uint8_t wmsg[200];
 extern uint8_t topic[80];
 extern uint8_t buf[100];
-static struct mqtt_client *_pclient;
-
 
 #define NUM_PWR 12
 
@@ -83,7 +81,7 @@ void publish_health_data()
 	report_power(wmsg);
 	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
 
-	err = data_publish(_pclient, MQTT_QOS_1_AT_LEAST_ONCE,
+	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
 					   wmsg, strlen(wmsg), topic, 1);
 	if (err)
 	{
@@ -92,7 +90,7 @@ void publish_health_data()
 	}
 }
 
-void init_health(struct mqtt_client *c)
+void init_health()
 {
-	_pclient = c;
+
 }
