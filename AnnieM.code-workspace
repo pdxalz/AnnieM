@@ -24,7 +24,8 @@
 			"log.h": "c",
 			"kernel.h": "c",
 			"rand32.h": "c",
-			"nrf_modem_at.h": "c"
+			"nrf_modem_at.h": "c",
+			"wind_sensor.h": "c"
 		},
 		"nrf-connect.topdir": "${nrf-connect.sdk:2.2.0}",
 		"nrf-connect.toolchain.path": "${nrf-connect.toolchain:2.2.0}",
