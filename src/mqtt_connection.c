@@ -12,7 +12,6 @@
 static uint8_t rx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
 static uint8_t tx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
 static uint8_t payload_buf[CONFIG_MQTT_PAYLOAD_BUFFER_SIZE];
-static bool sleep_mode = false;
 
 /* MQTT Broker details. */
 static struct sockaddr_storage broker;
@@ -20,16 +19,11 @@ static struct sockaddr_storage broker;
 // LOG_MODULE_DECLARE(AnnieM);
 LOG_MODULE_REGISTER(mqtt_con, LOG_LEVEL_INF);
 
-#define SLEEPY_MODE "sleep"
 #define WAKEY_MODE "wake"
 #define SAMPLE_FAST "fast"
 #define SAMPLE_SLOW "slow"
 #define REPORT "report"
 
-bool sleepy_mode()
-{
-	return sleep_mode;
-}
 
 /**@brief Function to get the payload of recived data.
  */
@@ -170,50 +164,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 			if (err >= 0)
 			{
 				data_print("Received: ", payload_buf, p->message.payload.len);
-				// Control the LED
-				// if (strncmp(payload_buf, CONFIG_TURN_LED_ON_CMD, sizeof(CONFIG_TURN_LED_ON_CMD) - 1) == 0)
-				// {
-				// 	az_set_led_on(LED_CONTROL_OVER_MQTT);
-				// }
-				// else if (strncmp(payload_buf, CONFIG_TURN_LED_OFF_CMD, sizeof(CONFIG_TURN_LED_OFF_CMD) - 1) == 0)
-				// {
-				// 	dk_set_led_off(LED_CONTROL_OVER_MQTT);
-				// }
-				// else if (strncmp(payload_buf, SLEEPY_MODE, sizeof(SLEEPY_MODE) - 1) == 0)
-				// {
-				// 	dk_set_led_off(0);
-				// 	dk_set_led_off(1);
-				// 	az_set_led_on(2);
-				// 	sleep_mode = true;
-				// }
-				// else if (strncmp(payload_buf, WAKEY_MODE, sizeof(WAKEY_MODE) - 1) == 0)
-				// {
-				// 	dk_set_led_off(2);
-				// 	az_set_led_on(1);
-				// 	az_set_led_on(0);
-				// 	sleep_mode = false;
-				// }
-				// else if (strncmp(payload_buf, SAMPLE_FAST, sizeof(SAMPLE_FAST) - 1) == 0)
-				// {
-				// 	az_set_led_on(2);
-				// 	az_set_led_on(1);
-				// 	az_set_led_on(0);
-				// 	sample_time = FAST_SAMPLE_TIME;
-				// }
-				// else if (strncmp(payload_buf, SAMPLE_SLOW, sizeof(SAMPLE_SLOW) - 1) == 0)
-				// {
-				// 	dk_set_led_off(2);
-				// 	dk_set_led_off(1);
-				// 	dk_set_led_off(0);
-				// 	sample_time = DEFAULT_SAMPLE_TIME;
-				// }
-				// else if (strncmp(payload_buf, REPORT, sizeof(REPORT) - 1) == 0)
-				// {
-				// 	az_set_led_on(2);
-				// 	dk_set_led_off(1);
-				// 	dk_set_led_off(0);
-				// 	begin_wind_sample();
-				// }
+
 			}
 			/* STEP 6.3 - On failed extraction of data */
 			// On failed extraction of data - Payload buffer is smaller than the recived data . Increase

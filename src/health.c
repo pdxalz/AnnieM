@@ -31,15 +31,6 @@ static uint16_t current_volts;
 
 static void health_timer_callback(struct k_timer *work)
 {
-	int rc;
-	time_t temp;
-	struct tm *timeptr;
-
-	temp = time(NULL);
-	timeptr = localtime(&temp);
-	rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
-	//	printk("health timer: %s  chars: %d\n", buf, rc);
-
 	turn_leds_on_with_color(RED);
 	k_work_submit(&health_worker);
 }
@@ -72,15 +63,6 @@ void report_power(uint8_t *buf)
 static void health_worker_callback(struct k_work *timer_id)
 {
 	int err;
-	// time_t now;
-	// now = time(NULL);
-	// struct tm tm;
-	// localtime_r(&now, &tm);
-
-	// int hour = tm.tm_hour;
-	// int minute = tm.tm_min;
-
-	//	printk("health worker\n");
 
 	report_power(wmsg);
 	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);

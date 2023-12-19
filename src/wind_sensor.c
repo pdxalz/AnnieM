@@ -49,37 +49,86 @@ struct w_sensor
 static struct mqtt_client *_pclient;
 static struct gpio_callback windspeed_cb_data;
 
-static void wind_check_callback(struct k_timer *work);
-static void check_wind_direction(struct k_timer *work);
-void frequency_counter(struct k_timer *work);
-static void speed_calc_callback(struct k_work *timer_id);
+static void sensor_sample_timer_cb(struct k_timer *work);
+static void wind_direction_timer_cb(struct k_timer *work);
+static void wind_speed_sample_timer_cb(struct k_timer *work);
+static void publish_reports_work_cb(struct k_work *timer_id);
+static uint16_t circ_avg(uint16_t a, uint16_t b);
 
-static K_TIMER_DEFINE(wind_check_timer, wind_check_callback, NULL);
-static K_TIMER_DEFINE(ktimeradc, check_wind_direction, NULL);
-static K_TIMER_DEFINE(frequency_timer, frequency_counter, NULL);
-static K_WORK_DEFINE(repeating_timer_work, speed_calc_callback);
+//************************
+// Timers and Work threads
+//************************
+static K_TIMER_DEFINE(sensor_sample_timer, sensor_sample_timer_cb, NULL);
+static K_TIMER_DEFINE(wind_direction_timer, wind_direction_timer_cb, NULL);
+static K_TIMER_DEFINE(wind_speed_sample_timer, wind_speed_sample_timer_cb, NULL);
+static K_WORK_DEFINE(publish_reports_work, publish_reports_work_cb);
 
 // initiates the measuring of wind data
-static void wind_check_callback(struct k_timer *work)
+static void sensor_sample_timer_cb(struct k_timer *work)
 {
-	int rc;
-	time_t temp;
-	struct tm *timeptr;
-
-	temp = time(NULL);
-	timeptr = localtime(&temp);
-	rc = strftime(buf, sizeof(buf), "Today is %A, %b %d.\nTime:  %r", timeptr);
-	//	printk("time: %s  chars: %d\n", buf, rc);
-
-	if (sleepy_mode())
-	{
-		return;
-	}
 	turn_leds_on_with_color(GREEN);
 
-	// set_boost(true);
-	begin_wind_sample();
+	// start counting windspeed pulses
+	frequency = 0;
+	k_timer_start(&wind_speed_sample_timer, K_SECONDS(6), K_FOREVER);
+
+	// start sampling direction sensor
+	k_timer_start(&wind_direction_timer, K_SECONDS(1), K_MSEC(400));
 }
+
+// updates the wind_direction variable by reading sensor voltage and applying a running average.
+// runs multiple times while windspeed is being calculated
+static void wind_direction_timer_cb(struct k_timer *work)
+{
+	uint16_t voltage;
+
+	if (get_adc_voltage(ADC_WIND_DIR_ID, &voltage) != 0)
+	{
+		LOG_WRN("Failed to get direction voltage\n");
+		return;
+	};
+
+	//	printk("direction voltage, %d\n", voltage);
+	vbuf[v_index] = (((uint32_t)voltage * 360) / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360;
+
+	v_index = (v_index + 1) % 8;
+	wind_direction = circ_avg(
+		circ_avg(circ_avg(vbuf[0], vbuf[1]), circ_avg(vbuf[2], vbuf[3])),
+		circ_avg(circ_avg(vbuf[4], vbuf[5]), circ_avg(vbuf[6], vbuf[7])));
+
+	//	LOG_INF("dir volts %d  dir %d\n", voltage, wind_direction);
+}
+
+// The timer sets the period wind speed pulses are counted. At the end of the timer
+// all sensor data gathering (speed and direction) is complete and then
+// the wind speed is calculated from the number of pulses counted.
+// A job is submitted to send the MQTT data
+static void wind_speed_sample_timer_cb(struct k_timer *work)
+{
+	float f = frequency / 6.0 * WIND_SCALE;
+	speed = (int)f;
+	LOG_DBG("Windspeed %d ...\n", speed);
+	frequency = 0;
+
+	k_work_submit(&publish_reports_work);
+}
+
+// ISR called on each pulse from the speed sensor, counts the number of pulses in
+// the timer period
+void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+	int64_t time = k_uptime_get();
+	// filter out sensor glitches
+	if ((time - lasttime) > 10)
+	{
+		frequency++;
+	}
+	lasttime = time;
+}
+
+//************************
+// Static functions
+//************************
 
 // creates JSON string containing time and wind data
 static void build_array_string(uint8_t *buf, struct tm *t)
@@ -127,38 +176,16 @@ static uint16_t circ_avg(uint16_t a, uint16_t b)
 	return angle;
 }
 
-// updates the wind_direction variable by reading sensor voltage and applying a running average.
-static void check_wind_direction(struct k_timer *work)
-{
-	uint16_t voltage;
-
-	if (get_adc_voltage(ADC_WIND_DIR_ID, &voltage) != 0)
-	{
-		LOG_WRN("Failed to get direction voltage\n");
-		return;
-	};
-
-	//	printk("direction voltage, %d\n", voltage);
-	vbuf[v_index] = (((uint32_t)voltage * 360) / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360;
-
-	v_index = (v_index + 1) % 8;
-	wind_direction = circ_avg(
-		circ_avg(circ_avg(vbuf[0], vbuf[1]), circ_avg(vbuf[2], vbuf[3])),
-		circ_avg(circ_avg(vbuf[4], vbuf[5]), circ_avg(vbuf[6], vbuf[7])));
-
-	//	LOG_INF("dir volts %d  dir %d\n", voltage, wind_direction);
-}
-
-#define NUM_PWR 12
-
 // background task that sends the MQTT sensor data
 // data is sent less often if night time or little wind
-static void speed_calc_callback(struct k_work *timer_id)
+static void publish_reports_work_cb(struct k_work *timer_id)
 {
 	time_t now;
 	now = time(NULL);
 	struct tm tm;
 	gmtime_r(&now, &tm);
+
+	turn_leds_on_with_color(BLUE);
 
 	clear_broker_history();
 
@@ -182,18 +209,21 @@ static void speed_calc_callback(struct k_work *timer_id)
 	}
 
 	wind_sensor[minute / 5].speed = speed;
-	k_timer_stop(&ktimeradc);
+	k_timer_stop(&wind_direction_timer);
 	wind_sensor[minute / 5].direction = wind_direction;
 
 	build_array_string(wmsg, &tm);
 	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
 	// sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
 
+	bool end_of_hour = minute / 5 == 11;
+
 	// always publish data just before the next hour, or
 	// publish only if the time is between 10AM and 9PM and
 	// the speed is higher than 5
-	if ((minute / 5 == 11) ||
-		(hour > 9 && hour < 21 && (speed >= 0)))
+	if (end_of_hour ||
+		( // hour > 9 && hour < 21 &&
+			(speed >= 0)))
 	{
 
 		int err;
@@ -208,43 +238,9 @@ static void speed_calc_callback(struct k_work *timer_id)
 	}
 }
 
-// Calculates the wind speed from the number of pulses, and resets count for next time
-// then submit a job to send the MQTT data
-void frequency_counter(struct k_timer *work)
-{
-	float f = frequency / 6.0 * WIND_SCALE;
-	speed = (int)f;
-	LOG_DBG("Windspeed %d ...\n", speed);
-	frequency = 0;
-	//	turn_leds_off();
-	turn_leds_on_with_color(BLUE);
-
-	// set_boost(false);
-
-	k_work_submit(&repeating_timer_work);
-}
-
-// ISR called on each pulse from the speed sensor, counts the number of pulses in
-// the timer period
-void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
-{
-	int64_t time = k_uptime_get();
-	// filter out sensor glitches
-	if ((time - lasttime) > 10)
-	{
-		frequency++;
-	}
-	lasttime = time;
-}
-
-// Starts timers for doing the speed and direction sense
-void begin_wind_sample()
-{
-	frequency = 0;
-	k_timer_start(&frequency_timer, K_SECONDS(6), K_FOREVER);
-
-	k_timer_start(&ktimeradc, K_SECONDS(1), K_MSEC(400));
-}
+//************************
+// Public functions
+//************************
 
 int init_wind_sensor(struct mqtt_client *c)
 {
@@ -266,13 +262,8 @@ int init_wind_sensor(struct mqtt_client *c)
 
 	gpio_add_callback(windspeed.port, &windspeed_cb_data);
 
-	// k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(20));
-	k_timer_start(&wind_check_timer, K_SECONDS(15), K_SECONDS(60 * 5));
+	// k_timer_start(&sensor_sample_timer, K_SECONDS(15), K_SECONDS(20));
+	k_timer_start(&sensor_sample_timer, K_SECONDS(15), K_SECONDS(60 * 5));
 
 	return 0;
-}
-
-int get_windspeed()
-{
-	return speed;
 }
