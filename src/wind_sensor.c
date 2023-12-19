@@ -214,7 +214,6 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 
 	build_array_string(wmsg, &tm);
 	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
-	// sprintf(topic, "%s/wind/00", CONFIG_MQTT_PRIMARY_TOPIC);
 
 	bool end_of_hour = minute / 5 == 11;
 
@@ -235,6 +234,12 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 			LOG_WRN("Failed to send message, %d\n", err);
 			return;
 		}
+	}
+	if (end_of_hour)
+	{
+		k_msleep(1000);
+		turn_leds_on_with_color(RED);
+		publish_health_data();
 	}
 }
 
