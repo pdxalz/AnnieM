@@ -11,10 +11,6 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(health, LOG_LEVEL_INF);
 
-extern uint8_t wmsg[200];
-extern uint8_t topic[80];
-extern uint8_t buf[100];
-
 #define NUM_PWR 12
 
 int n_pwr = NUM_PWR - 1;
@@ -78,11 +74,14 @@ void publish_health_data()
 {
 	int err;
 
-	report_power(wmsg);
-	sprintf(topic, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
+	uint8_t * msgbuf = get_mqtt_message_buf();
+	uint8_t * topicbuf = get_mqtt_topic_buf();
+
+	report_power(msgbuf);
+	sprintf(topicbuf, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
 
 	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
-					   wmsg, strlen(wmsg), topic, 1);
+					   msgbuf, strlen(msgbuf), topicbuf, 1);
 	if (err)
 	{
 		LOG_WRN("Failed to send pwr message, %d\n", err);

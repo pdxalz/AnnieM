@@ -29,13 +29,9 @@ static int oldspeed = 0;
 static bool broker_cleared = false;
 static uint16_t wind_direction;
 
-// todo replace message building buffers
-uint8_t wmsg[200];
-uint8_t topic[80];
-uint8_t buf[100];
-
-uint16_t vbuf[8];
-uint16_t v_index = 0;
+// circular buffer holding direction voltages
+uint16_t _dir_buf[8];
+uint16_t _dir_idx = 0;
 
 // todo: should be calculated
 #define SAMPLES_PER_HOUR 12
@@ -87,12 +83,12 @@ static void wind_direction_timer_cb(struct k_timer *work)
 	};
 
 	//	printk("direction voltage, %d\n", voltage);
-	vbuf[v_index] = (((uint32_t)voltage * 360) / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360;
+	_dir_buf[_dir_idx] = (((uint32_t)voltage * 360) / MAX_DIRECTION_VOLTAGE + NORTH_OFFSET) % 360;
 
-	v_index = (v_index + 1) % 8;
+	_dir_idx = (_dir_idx + 1) % 8;
 	wind_direction = circ_avg(
-		circ_avg(circ_avg(vbuf[0], vbuf[1]), circ_avg(vbuf[2], vbuf[3])),
-		circ_avg(circ_avg(vbuf[4], vbuf[5]), circ_avg(vbuf[6], vbuf[7])));
+		circ_avg(circ_avg(_dir_buf[0], _dir_buf[1]), circ_avg(_dir_buf[2], _dir_buf[3])),
+		circ_avg(circ_avg(_dir_buf[4], _dir_buf[5]), circ_avg(_dir_buf[6], _dir_buf[7])));
 
 	//	LOG_INF("dir volts %d  dir %d\n", voltage, wind_direction);
 }
@@ -146,6 +142,8 @@ static void build_array_string(uint8_t *buf, struct tm *t)
 // erases the persistant MQTT data, occurs once at boot time
 static void clear_broker_history()
 {
+	uint8_t * topicbuf = get_mqtt_topic_buf();
+
 	// clear the broker data first time after power up
 	if (!broker_cleared)
 	{
@@ -153,9 +151,9 @@ static void clear_broker_history()
 		broker_cleared = true;
 		for (int i = 0; i < 24; ++i)
 		{
-			sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, i);
+			sprintf(topicbuf, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, i);
 			int err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
-								   "", 0, topic, 1);
+								   "", 0, topicbuf, 1);
 			if (err)
 			{
 				LOG_WRN("Failed to send broker clear message, %d\n", err);
@@ -210,8 +208,11 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	k_timer_stop(&wind_direction_timer);
 	wind_sensor[minute / 5].direction = wind_direction;
 
-	build_array_string(wmsg, &tm);
-	sprintf(topic, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
+	uint8_t * msgbuf = get_mqtt_message_buf();
+	uint8_t * topicbuf = get_mqtt_topic_buf();
+
+	build_array_string(msgbuf, &tm);
+	sprintf(topicbuf, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
 
 	bool end_of_hour = minute / 5 == 11;
 
@@ -226,7 +227,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 		int err;
 		oldspeed = speed;
 		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
-						   wmsg, strlen(wmsg), topic, 1);
+						   msgbuf, strlen(msgbuf), topicbuf, 1);
 		if (err)
 		{
 			LOG_WRN("Failed to send message, %d\n", err);

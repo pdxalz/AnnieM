@@ -29,6 +29,21 @@ LOG_MODULE_REGISTER(mqtt_con, LOG_LEVEL_INF);
 #define SAMPLE_SLOW "slow"
 #define REPORT "report"
 
+
+uint8_t _mqtt_message_buf[200];
+uint8_t _mqtt_topic_buf[80];
+
+uint8_t * get_mqtt_message_buf()
+{
+	return _mqtt_message_buf;
+}
+
+uint8_t * get_mqtt_topic_buf()
+{
+	return _mqtt_topic_buf;
+}
+
+
 /**@brief Function to get the payload of recived data.
  */
 static int get_received_payload(struct mqtt_client *c, size_t length)
@@ -106,6 +121,11 @@ static void data_print(uint8_t *prefix, uint8_t *data, size_t len)
 int data_publish(enum mqtt_qos qos,
 				 uint8_t *data, size_t len, uint8_t *topic, uint8_t retain)
 {
+	if (len > CONFIG_MQTT_MESSAGE_BUFFER_SIZE)
+	{
+		LOG_ERR("_mqtt_message_buf overflow: %d\n", len);
+		len = CONFIG_MQTT_MESSAGE_BUFFER_SIZE - 1;
+	}
 	struct mqtt_publish_param param;
 	param.message.topic.qos = qos;
 	param.message.topic.topic.utf8 = topic; // CONFIG_MQTT_PUB_TOPIC;
