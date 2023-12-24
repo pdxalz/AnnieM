@@ -16,7 +16,6 @@
         var chart;
         var windData = [];               // Array of wind reports, index is hour
         var latestTime = new Date(0);    // Time of most recent report
-        var maxGust = 0;
 
         function onFailure(message) {
             console.log("Connection Attempt to Host " + host + "Failed");
@@ -78,7 +77,6 @@
             }
             // get the time of the wind sample
             var time = new Date(wind_json.time);
-            maxGust = 0;
 
             //            console.log("timestamp: " + time.getTime() + "   latest: ", Date.now());
 
@@ -112,6 +110,9 @@
             var sampleTimes = [];
             var speedData = [];
             var dirData = [];
+            var gustData = [];
+            var lullData = [];
+
             var hour = latestTime.getHours();
 
             // Scan through the windData in order by time and
@@ -123,8 +124,9 @@
                     sampleTimes.push(j == 0 ? timeString(index) : "");
                     speedData.push(windData[index][j][0]);
                     dirData.push(northCenter(windData[index][j][1]));
-                    if (windData[index][j][0] > maxGust)
-                        maxGust = windData[index][j][0];
+                    gustData.push(windData[index][j][2]);
+                    lullData.push(windData[index][j][3]);
+                   
                 }
             }
 
@@ -134,14 +136,15 @@
             recentWind.innerHTML =
                 "<h2><small>" + (latestTime.getMonth() + 1) + "/" + latestTime.getDate() + " " +
                 latestTime.getHours() + ":" + latestTime.getMinutes().toString().padStart(2, '0') + "</small><br>" +
-                windData[hour][last][0] + "<small>mph</small>  " + directionString(windData[hour][last][1]) +
-                "<small> Gust: </small> " + maxGust;
+                windData[hour][last][0] + "<small>mph</small>  " + directionString(windData[hour][last][1]);
 
             //           console.log("recent:  " + hour + " " + last);
             //           console.log("data:" + windData[hour]);
 
             chart.data.datasets[0].data = speedData;
             chart.data.datasets[1].data = dirData;
+            chart.data.datasets[2].data = gustData;
+            chart.data.datasets[3].data = lullData;
             chart.data.labels = sampleTimes;
             chart.update();
         }
@@ -229,13 +232,29 @@
                     label: "Wind Speed",
                     pointRadius: 1,
                     pointBackgroundColor: "rgb(0,0,255)",
-                    borderColor: "green"
+                    borderColor: "green",
+                    borderWidth: 4,
+                    fill: false,
                 }, {
                     label: "Direction (North at middle)",
                     pointRadius: 1,
                     pointBackgroundColor: "rgb(0,0,255)",
                     borderColor: "blue",
                     fill: false,
+                    borderWidth: -1
+                }, {
+                    label: "Gusts",
+                    pointRadius: 2,
+                    pointBackgroundColor: "rgb(255,0,0)",
+                    borderColor: "red",
+                    fill: false ,
+                    borderWidth: -1
+                }, {
+                    label: "Lulls",
+                    pointRadius: 3,
+                    pointBackgroundColor: "rgb(255,0,0)",
+                    borderColor: "black",
+                    fill: '-1',
                     borderWidth: -1
                 },
                 ]

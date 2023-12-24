@@ -15,6 +15,11 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(sensor, LOG_LEVEL_INF);
 
+#define SECONDS_PER_SAMPLE (60)    // 60 is the minimum, lower requires code fix
+#define SAMPLE_DURATION 6
+#define REPORTS_PER_HOUR 6     // 6 is every 10 minutes
+#define MINUTES_PER_REPORT (60 / REPORTS_PER_HOUR)
+
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
 static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
 
@@ -24,22 +29,26 @@ static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, g
 
 static volatile int frequency = 0;
 static volatile int64_t lasttime = 0;
+
+static int sample_count;
 static int speed;
-static int oldspeed = 0;
+static int gust;
+static int lull;
+
 static bool broker_cleared = false;
 static uint16_t wind_direction;
 
 // circular buffer holding direction voltages
-uint16_t _dir_buf[8];
+uint16_t _dir_buf[8]; // fixed size due to averaging calculation
 uint16_t _dir_idx = 0;
 
-// todo: should be calculated
-#define SAMPLES_PER_HOUR 12
 struct w_sensor
 {
 	uint8_t speed;
+	uint8_t gust;
+	uint8_t lull;
 	uint16_t direction;
-} wind_sensor[12];
+} wind_sensor[REPORTS_PER_HOUR];
 
 static struct gpio_callback windspeed_cb_data;
 
@@ -47,6 +56,10 @@ static void sensor_sample_timer_cb(struct k_timer *work);
 static void wind_direction_timer_cb(struct k_timer *work);
 static void wind_speed_sample_timer_cb(struct k_timer *work);
 static void publish_reports_work_cb(struct k_work *timer_id);
+
+static void restart_samples();
+static void build_array_string(uint8_t *buf, struct tm *t);
+static void clear_broker_history();
 static uint16_t circ_avg(uint16_t a, uint16_t b);
 
 //************************
@@ -64,7 +77,7 @@ static void sensor_sample_timer_cb(struct k_timer *work)
 
 	// start counting windspeed pulses
 	frequency = 0;
-	k_timer_start(&wind_speed_sample_timer, K_SECONDS(6), K_FOREVER);
+	k_timer_start(&wind_speed_sample_timer, K_SECONDS(SAMPLE_DURATION), K_FOREVER);
 
 	// start sampling direction sensor
 	k_timer_start(&wind_direction_timer, K_SECONDS(1), K_MSEC(400));
@@ -100,7 +113,12 @@ static void wind_direction_timer_cb(struct k_timer *work)
 static void wind_speed_sample_timer_cb(struct k_timer *work)
 {
 	float f = frequency / 6.0 * WIND_SCALE;
-	speed = (int)f;
+	int current_speed = (int)f;
+	++sample_count;
+	speed += current_speed;
+	gust = (gust > current_speed) ? gust : current_speed;
+	lull = (lull < current_speed) ? lull : current_speed;
+
 	LOG_DBG("Windspeed %d ...\n", speed);
 	frequency = 0;
 
@@ -120,9 +138,100 @@ void windspeed_handler(const struct device *dev, struct gpio_callback *cb, uint3
 	lasttime = time;
 }
 
+// background task that sends the MQTT sensor data
+// data is sent less often if night time or little wind
+static void publish_reports_work_cb(struct k_work *timer_id)
+{
+	time_t now;
+	now = time(NULL);
+	struct tm tm;
+	gmtime_r(&now, &tm);
+	int avg_speed;
+
+	clear_broker_history();
+
+	int hour = tm.tm_hour;
+	int minute = tm.tm_min;
+
+	// only report if it's the first sample period of the report period
+	if (minute % MINUTES_PER_REPORT != 0)
+	{
+		turn_leds_on_with_color(BLUE);
+		return;
+	}
+
+	turn_leds_on_with_color(MAGENTA);
+
+	// zero out hourly data for the first report of the hour
+	if (minute < MINUTES_PER_REPORT)
+	{
+		for (int i = 0; i < REPORTS_PER_HOUR; ++i)
+		{
+			wind_sensor[i].speed = 0;
+			wind_sensor[i].gust = 0;
+			wind_sensor[i].lull = 0;
+			wind_sensor[i].direction = 0;
+		}
+	}
+
+	avg_speed = speed / sample_count;
+	// 0,0 indicates unset item.
+	if (avg_speed == 0 && wind_direction == 0)
+	{
+		wind_direction = 1;
+	}
+
+	wind_sensor[minute / MINUTES_PER_REPORT].speed = avg_speed;
+	wind_sensor[minute / MINUTES_PER_REPORT].gust = gust;
+	wind_sensor[minute / MINUTES_PER_REPORT].lull = lull;
+	k_timer_stop(&wind_direction_timer);
+	wind_sensor[minute / MINUTES_PER_REPORT].direction = wind_direction;
+	restart_samples();
+
+	uint8_t *msgbuf = get_mqtt_message_buf();
+	uint8_t *topicbuf = get_mqtt_topic_buf();
+
+	build_array_string(msgbuf, &tm);
+	sprintf(topicbuf, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
+
+	bool end_of_hour = minute / 5 == 11;
+
+	// always publish data just before the next hour, or
+	// publish only if the time is between 10AM and 9PM and
+	// the speed is higher than 5
+	if (end_of_hour ||
+		( // hour > 9 && hour < 21 &&
+			(avg_speed >= 0)))
+	{
+
+		int err;
+		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
+						   msgbuf, strlen(msgbuf), topicbuf, 1);
+		if (err)
+		{
+			LOG_WRN("Failed to send message, %d\n", err);
+			return;
+		}
+	}
+	if (end_of_hour)
+	{
+		k_msleep(1000);
+		turn_leds_on_with_color(RED);
+		publish_health_data();
+	}
+}
+
 //************************
 // Static functions
 //************************
+
+static void restart_samples()
+{
+	sample_count = 0;
+	speed = 0;
+	gust = 0;
+	lull = 100;
+}
 
 // creates JSON string containing time and wind data
 static void build_array_string(uint8_t *buf, struct tm *t)
@@ -131,9 +240,9 @@ static void build_array_string(uint8_t *buf, struct tm *t)
 	buf += sprintf(buf, "{\"time\":\"%04d-%02d-%02dT%02d:%02dZ\", ", (t->tm_year + 1900), t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min);
 	buf += sprintf(buf, "\"wind\":[");
 
-	for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
+	for (int i = 0; i < REPORTS_PER_HOUR; ++i)
 	{
-		buf += sprintf(buf, "[%d, %d],", wind_sensor[i].speed, wind_sensor[i].direction);
+		buf += sprintf(buf, "[%d, %d, %d, %d],", wind_sensor[i].speed, wind_sensor[i].direction, wind_sensor[i].gust, wind_sensor[i].lull);
 	}
 	--buf; // remove the last comma
 	sprintf(buf, "]}");
@@ -142,7 +251,7 @@ static void build_array_string(uint8_t *buf, struct tm *t)
 // erases the persistant MQTT data, occurs once at boot time
 static void clear_broker_history()
 {
-	uint8_t * topicbuf = get_mqtt_topic_buf();
+	uint8_t *topicbuf = get_mqtt_topic_buf();
 
 	// clear the broker data first time after power up
 	if (!broker_cleared)
@@ -172,75 +281,6 @@ static uint16_t circ_avg(uint16_t a, uint16_t b)
 	return angle;
 }
 
-// background task that sends the MQTT sensor data
-// data is sent less often if night time or little wind
-static void publish_reports_work_cb(struct k_work *timer_id)
-{
-	time_t now;
-	now = time(NULL);
-	struct tm tm;
-	gmtime_r(&now, &tm);
-
-	turn_leds_on_with_color(BLUE);
-
-	clear_broker_history();
-
-	int hour = tm.tm_hour;
-	int minute = tm.tm_min;
-
-	if (minute < 60 / SAMPLES_PER_HOUR)
-	{
-		// zero out hourly data
-		for (int i = 0; i < SAMPLES_PER_HOUR; ++i)
-		{
-			wind_sensor[i].speed = 0;
-			wind_sensor[i].direction = 0;
-		}
-	}
-
-	// 0,0 indicates unset item.
-	if (speed == 0 && wind_direction == 0)
-	{
-		wind_direction = 1;
-	}
-
-	wind_sensor[minute / 5].speed = speed;
-	k_timer_stop(&wind_direction_timer);
-	wind_sensor[minute / 5].direction = wind_direction;
-
-	uint8_t * msgbuf = get_mqtt_message_buf();
-	uint8_t * topicbuf = get_mqtt_topic_buf();
-
-	build_array_string(msgbuf, &tm);
-	sprintf(topicbuf, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
-
-	bool end_of_hour = minute / 5 == 11;
-
-	// always publish data just before the next hour, or
-	// publish only if the time is between 10AM and 9PM and
-	// the speed is higher than 5
-	if (end_of_hour ||
-		( // hour > 9 && hour < 21 &&
-			(speed >= 0)))
-	{
-
-		int err;
-		oldspeed = speed;
-		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
-						   msgbuf, strlen(msgbuf), topicbuf, 1);
-		if (err)
-		{
-			LOG_WRN("Failed to send message, %d\n", err);
-			return;
-		}
-	}
-	if (end_of_hour)
-	{
-		k_msleep(1000);
-		turn_leds_on_with_color(RED);
-		publish_health_data();
-	}
-}
 
 //************************
 // Public functions
@@ -265,8 +305,10 @@ int init_wind_sensor()
 
 	gpio_add_callback(windspeed.port, &windspeed_cb_data);
 
-	// k_timer_start(&sensor_sample_timer, K_SECONDS(15), K_SECONDS(20));
-	k_timer_start(&sensor_sample_timer, K_SECONDS(15), K_SECONDS(60 * 5));
+	restart_samples();
+
+
+	k_timer_start(&sensor_sample_timer, K_SECONDS(5), K_SECONDS(SECONDS_PER_SAMPLE));
 
 	return 0;
 }
