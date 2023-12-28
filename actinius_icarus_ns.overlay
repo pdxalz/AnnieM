@@ -33,3 +33,7 @@
 &sim_select {
     sim = "external";
 };
+
+&pwm0 {
+	status = "disabled";
+};
