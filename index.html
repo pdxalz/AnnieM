@@ -11,8 +11,10 @@
     <script type="text/javascript" language="javascript">
         var mqtt;
         var reconnectTimeout = 10000;
-        var host = "test.mosquitto.org"; //MQTT Server, 
-        var port = 8081;
+        //        var host = "test.mosquitto.org"; //MQTT Server, 
+        //        var port = 8081;
+        var host = "broker.hivemq.com"; //MQTT Server, 
+        var port = 8884;
         var chart;
         var windData = [];               // Array of wind reports, index is hour
         var latestTime = new Date(0);    // Time of most recent report
@@ -51,7 +53,7 @@
             return dir_dict[dir_index] + " " + "<small>" + (rem < 0 ? ' ' : '+') + rem + "&#176</small>";
         }
 
-         // Hack to make degree data fit into windspeed data, North is center of chart
+        // Hack to make degree data fit into windspeed data, North is center of chart
         function northCenter(degrees) {
             return ((degrees + 180) % 360) / 9;
         }
@@ -126,7 +128,7 @@
                     dirData.push(northCenter(windData[index][j][1]));
                     gustData.push(windData[index][j][2]);
                     lullData.push(windData[index][j][3]);
-                   
+
                 }
             }
 
@@ -247,7 +249,7 @@
                     pointRadius: 2,
                     pointBackgroundColor: "rgb(255,0,0)",
                     borderColor: "red",
-                    fill: false ,
+                    fill: false,
                     borderWidth: -1
                 }, {
                     label: "Lulls",
