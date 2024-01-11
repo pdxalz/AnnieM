@@ -9,15 +9,9 @@
     </script>
     <link rel="stylesheet" href="style.css">
     <script type="text/javascript" language="javascript">
-        var mqtt;
-        var reconnectTimeout = 10000;
-        //        var host = "test.mosquitto.org"; //MQTT Server, 
-        //        var port = 8081;
-        var host = "broker.hivemq.com"; //MQTT Server, 
-        var port = 8884;
-        var chart;
+        // start FastAPI servr
+        //    uvicorn script:app --reload
         var chart2;
-        var windData = [];               // Array of wind reports, index is hour
         var latestTime = new Date(0);    // Time of most recent report
 
         const apiUrl = 'http://127.0.0.1:8000';
@@ -59,21 +53,6 @@
                 });
 
         }
-        function onFailure(message) {
-            console.log("Connection Attempt to Host " + host + "Failed");
-            setTimeout(MQTTconnect, reconnectTimeout);
-        }
-
-        // Handle subscribed MQTT Message
-        function onMessageArrived(msg) {
-            var wind_data = msg.payloadString;
-            console.log("dest: :" + msg.destinationName + " *** " + msg.payloadString);
-
-            if (msg.destinationName.search("wind") >= 0) {
-                plotWindData(wind_data);
-            }
-            testapi();
-        }
 
         // Convert a 0-360 degree direction to a compass point and degrees from it
         function directionString(direction) {
@@ -110,113 +89,6 @@
                 return (time24 - 12).toString() + "pm"
         }
 
-        // Adds a wind speed message to the windData array then redraw the chart of all data
-        function plotWindData(wind_data) {
-            try {
-                wind_json = JSON.parse(wind_data);
-            }
-            catch (err) {
-                console.log(err.message);
-            }
-            // get the time of the wind sample
-            var time = new Date(wind_json.time);
-
-            //            console.log("timestamp: " + time.getTime() + "   latest: ", Date.now());
-
-            // The windData array gets filled with the wind messages. 
-            // The sample hour is the index to the windData array.  
-            var hour = time.getHours();
-            windData[hour] = wind_json.wind;
-
-            // keep track of the most recent time read
-            if (time > latestTime) {
-                latestTime = time;
-            }
-            console.log("winddata: " + windData);
-            console.log("timediff:" + time.getTime() + "  " + Date.now() + " " + (Date.now() - time.getTime()));
-            // check for corrupted data, older than two days ago
-            if (time.getTime() < (Date.now() - (2 * 24 * 60 * 60 * 1000))) {
-                for (var i = windData[hour].length - 1; i >= 0; --i) {
-                    windData[hour][i][1] = 177;
-                }
-            }
-            // strip off the 0,0 "no data" values off the end.
-            for (var i = windData[hour].length - 1; i >= 0; --i) {
-                if (windData[hour][i][0] == 0 && windData[hour][i][1] == 0) {
-                    windData[hour].pop();
-                }
-                else {
-                    break;
-                }
-            }
-
-            var sampleTimes = [];
-            var speedData = [];
-            var dirData = [];
-            var gustData = [];
-            var lullData = [];
-
-            var hour = latestTime.getHours();
-
-            // Scan through the windData in order by time and
-            // create the arrays for the chart.
-            for (var i = 0; i < windData.length; ++i) {
-                // index = the oldest sample
-                var index = (hour + i + 1) % windData.length;
-                for (var j = 0; (windData[index] !== undefined && j < windData[index].length); ++j) {
-                    sampleTimes.push(j == 0 ? timeString(index) : "");
-                    speedData.push(windData[index][j][0]);
-                    dirData.push(northCenter(windData[index][j][1]));
-                    gustData.push(windData[index][j][2]);
-                    lullData.push(windData[index][j][3]);
-
-                }
-            }
-
-            //            var gust = document.getElementById("max-gust");
-            var last = windData[hour].length - 1;
-            var recentWind = document.getElementById("recent-wind");
-            recentWind.innerHTML =
-                "<h2><small>" + (latestTime.getMonth() + 1) + "/" + latestTime.getDate() + " " +
-                latestTime.getHours() + ":" + latestTime.getMinutes().toString().padStart(2, '0') + "</small><br>" +
-                windData[hour][last][0] + "<small>mph</small>  " + directionString(windData[hour][last][1]);
-
-            //           console.log("recent:  " + hour + " " + last);
-            //           console.log("data:" + windData[hour]);
-
-            chart.data.datasets[0].data = speedData;
-            chart.data.datasets[1].data = dirData;
-            chart.data.datasets[2].data = gustData;
-            chart.data.datasets[3].data = lullData;
-            chart.data.labels = sampleTimes;
-            chart.update();
-        }
-
-        // MQTT connection
-        function onConnect() {
-            // Once a connection has been made, make a subscription and send a message.
-
-            console.log("Connected ");
-            mqtt.subscribe("zimbuktu/wind/#");
-            mqtt.subscribe("zimbuktu/recent/#");
-        }
-
-        function MQTTconnect() {
-            console.log("connecting to " + host + " " + port);
-            var x = Math.floor(Math.random() * 10000);
-            var cname = "orderform-" + x;
-            mqtt = new Paho.MQTT.Client(host, port, cname);
-            //document.write("connecting to "+ host);
-            var options = {
-                timeout: 3,
-                onSuccess: onConnect,
-                onFailure: onFailure,
-                useSSL: true
-            };
-            mqtt.onMessageArrived = onMessageArrived
-
-            mqtt.connect(options); //connect
-        }
 
     </script>
 </head>
@@ -230,12 +102,6 @@
     </div>
     <div class="w3-panel w3-pale-blue">
         <div id="recent-wind"></div>
-    </div>
-
-    <div class="w3-panel w3-pale-blue" style="direction: rtl; overflow-x: auto; overflow-y: hidden;">
-        <div style="width:3000px; height: 500px">
-            <canvas id="myChart" height="500" width="0"></canvas>
-        </div>
     </div>
 
     <div class="w3-panel w3-pale-blue" style="direction: rtl; overflow-x: auto; overflow-y: hidden;">
@@ -272,70 +138,7 @@
 
 
     <script>
-        MQTTconnect();
 
-        chart = new Chart("myChart", {
-            type: "line",
-            data: {
-                datasets: [{
-                    label: "Wind Speed",
-                    pointRadius: 1,
-                    pointBackgroundColor: "rgb(0,0,255)",
-                    borderColor: "green",
-                    borderWidth: 4,
-                    fill: false,
-                }, {
-                    label: "Direction (North at middle)",
-                    pointRadius: 1,
-                    pointBackgroundColor: "rgb(0,0,255)",
-                    borderColor: "blue",
-                    fill: false,
-                    borderWidth: -1
-                }, {
-                    label: "Gusts",
-                    pointRadius: 2,
-                    pointBackgroundColor: "rgb(255,0,0)",
-                    borderColor: "red",
-                    fill: false,
-                    borderWidth: -1
-                }, {
-                    label: "Lulls",
-                    pointRadius: 3,
-                    pointBackgroundColor: "rgb(255,0,0)",
-                    borderColor: "black",
-                    fill: '-1',
-                    borderWidth: -1
-                },
-                ]
-            },
-            options: {
-                legend: { display: true },
-
-                scales: {
-                    xAxes: [{ ticks: { min: 40, max: 290 } }],
-                    yAxes: [{
-                        position: 'right',
-                        ticks: {
-                            fontSize: 25,
-                            min: 0,
-                            max: 40,
-                        }
-                    },
-                    {
-                        position: 'right',
-                        ticks: {
-                            fontColor: 'blue',
-                            fontSize: 25,
-                            min: 0, max: 8, callback: function (value) {
-                                var x = ["S", "SW", "W", "NW", "N", "NE", "E", "SE", "S"];
-                                return x[value % x.length];
-
-                            }
-                        }
-                    }],
-                }
-            }
-        });
 
         chart2 = new Chart("myChart2", {
             type: "line",
@@ -399,6 +202,7 @@
                 }
             }
         });
+        testapi();
 
     </script>
 </body>
