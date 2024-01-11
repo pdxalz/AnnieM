@@ -15,9 +15,9 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(sensor, LOG_LEVEL_INF);
 
-#define SECONDS_PER_SAMPLE (60)    // 60 is the minimum, lower requires code fix
+#define SECONDS_PER_SAMPLE (60) // 60 is the minimum, lower requires code fix
 #define SAMPLE_DURATION 6
-#define REPORTS_PER_HOUR 6     // 6 is every 10 minutes
+#define REPORTS_PER_HOUR 30 // 6 is every 10 minutes
 #define MINUTES_PER_REPORT (60 / REPORTS_PER_HOUR)
 
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
@@ -35,20 +35,11 @@ static int speed;
 static int gust;
 static int lull;
 
-static bool broker_cleared = false;
 static uint16_t wind_direction;
 
 // circular buffer holding direction voltages
 uint16_t _dir_buf[8]; // fixed size due to averaging calculation
 uint16_t _dir_idx = 0;
-
-struct w_sensor
-{
-	uint8_t speed;
-	uint8_t gust;
-	uint8_t lull;
-	uint16_t direction;
-} wind_sensor[REPORTS_PER_HOUR];
 
 static struct gpio_callback windspeed_cb_data;
 
@@ -57,9 +48,6 @@ static void wind_direction_timer_cb(struct k_timer *work);
 static void wind_speed_sample_timer_cb(struct k_timer *work);
 static void publish_reports_work_cb(struct k_work *timer_id);
 
-static void restart_samples();
-static void build_array_string(uint8_t *buf, struct tm *t);
-static void clear_broker_history();
 static uint16_t circ_avg(uint16_t a, uint16_t b);
 
 //************************
@@ -148,9 +136,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	gmtime_r(&now, &tm);
 	int avg_speed;
 
-	clear_broker_history();
-
-	int hour = tm.tm_hour;
+	//	int hour = tm.tm_hour;
 	int minute = tm.tm_min;
 
 	// only report if it's the first sample period of the report period
@@ -162,37 +148,16 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 
 	turn_leds_on_with_color(MAGENTA);
 
-	// zero out hourly data for the first report of the hour
-	if (minute < MINUTES_PER_REPORT)
-	{
-		for (int i = 0; i < REPORTS_PER_HOUR; ++i)
-		{
-			wind_sensor[i].speed = 0;
-			wind_sensor[i].gust = 0;
-			wind_sensor[i].lull = 0;
-			wind_sensor[i].direction = 0;
-		}
-	}
-
 	avg_speed = speed / sample_count;
-	// 0,0 indicates unset item.
-	if (avg_speed == 0 && wind_direction == 0)
-	{
-		wind_direction = 1;
-	}
-
-	wind_sensor[minute / MINUTES_PER_REPORT].speed = avg_speed;
-	wind_sensor[minute / MINUTES_PER_REPORT].gust = gust;
-	wind_sensor[minute / MINUTES_PER_REPORT].lull = lull;
-	k_timer_stop(&wind_direction_timer);
-	wind_sensor[minute / MINUTES_PER_REPORT].direction = wind_direction;
-	restart_samples();
 
 	uint8_t *msgbuf = get_mqtt_message_buf();
 	uint8_t *topicbuf = get_mqtt_topic_buf();
 
-	build_array_string(msgbuf, &tm);
-	sprintf(topicbuf, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, hour);
+	sprintf(topicbuf, "%s/wind", CONFIG_MQTT_PRIMARY_TOPIC);
+	k_timer_stop(&wind_direction_timer);
+
+	int shorttime = tm.tm_min + tm.tm_hour * 100 + tm.tm_mday * 10000 + tm.tm_mon * 1000000;
+	sprintf(msgbuf, "{\"t\":%d, \"d\":%d,  \"a\":%d, \"g\":%d, \"l\":%d}", shorttime, wind_direction, avg_speed, gust, lull);
 
 	bool end_of_hour = minute / 5 == 11;
 
@@ -206,7 +171,10 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 
 		int err;
 		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
-						   msgbuf, strlen(msgbuf), topicbuf, 1);
+						   msgbuf, strlen(msgbuf), topicbuf, 0);
+		lull = 100;
+		gust = 0;
+
 		if (err)
 		{
 			LOG_WRN("Failed to send message, %d\n", err);
@@ -217,60 +185,13 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	{
 		k_msleep(1000);
 		turn_leds_on_with_color(RED);
-		publish_health_data();
+		//		publish_health_data();
 	}
 }
 
 //************************
 // Static functions
 //************************
-
-static void restart_samples()
-{
-	sample_count = 0;
-	speed = 0;
-	gust = 0;
-	lull = 100;
-}
-
-// creates JSON string containing time and wind data
-static void build_array_string(uint8_t *buf, struct tm *t)
-{
-
-	buf += sprintf(buf, "{\"time\":\"%04d-%02d-%02dT%02d:%02dZ\", ", (t->tm_year + 1900), t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min);
-	buf += sprintf(buf, "\"wind\":[");
-
-	for (int i = 0; i < REPORTS_PER_HOUR; ++i)
-	{
-		buf += sprintf(buf, "[%d, %d, %d, %d],", wind_sensor[i].speed, wind_sensor[i].direction, wind_sensor[i].gust, wind_sensor[i].lull);
-	}
-	--buf; // remove the last comma
-	sprintf(buf, "]}");
-}
-
-// erases the persistant MQTT data, occurs once at boot time
-static void clear_broker_history()
-{
-	uint8_t *topicbuf = get_mqtt_topic_buf();
-
-	// clear the broker data first time after power up
-	if (!broker_cleared)
-	{
-		LOG_WRN("clearing broker history\n");
-		broker_cleared = true;
-		for (int i = 0; i < 24; ++i)
-		{
-			sprintf(topicbuf, "%s/wind/%02d", CONFIG_MQTT_PRIMARY_TOPIC, i);
-			int err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
-								   "", 0, topicbuf, 1);
-			if (err)
-			{
-				LOG_WRN("Failed to send broker clear message, %d\n", err);
-				return;
-			}
-		}
-	}
-}
 
 // averages two angles, result is between 0 and 359
 static uint16_t circ_avg(uint16_t a, uint16_t b)
@@ -280,7 +201,6 @@ static uint16_t circ_avg(uint16_t a, uint16_t b)
 	//	printk("avg=      %d, %d, %d, %d", a, b, diff, angle);
 	return angle;
 }
-
 
 //************************
 // Public functions
@@ -294,6 +214,9 @@ int init_wind_sensor()
 		return -1;
 	}
 
+	lull = 100;
+	gust = 0;
+
 	err = gpio_pin_configure_dt(&windspeed, GPIO_INPUT | GPIO_PULL_UP);
 	if (err < 0)
 	{
@@ -304,9 +227,6 @@ int init_wind_sensor()
 	gpio_init_callback(&windspeed_cb_data, windspeed_handler, BIT(windspeed.pin));
 
 	gpio_add_callback(windspeed.port, &windspeed_cb_data);
-
-	restart_samples();
-
 
 	k_timer_start(&sensor_sample_timer, K_SECONDS(5), K_SECONDS(SECONDS_PER_SAMPLE));
 
