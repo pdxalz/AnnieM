@@ -16,9 +16,49 @@
         var host = "broker.hivemq.com"; //MQTT Server, 
         var port = 8884;
         var chart;
+        var chart2;
         var windData = [];               // Array of wind reports, index is hour
         var latestTime = new Date(0);    // Time of most recent report
 
+        const apiUrl = 'http://127.0.0.1:8000';
+
+        function testapi() {
+            // Define the API URL
+
+            // Make a GET request
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+
+                    test_json = JSON.parse(data);
+
+                    var dirfixed = test_json.dir.map(northCenter);
+
+                    chart2.data.datasets[0].data = test_json.avg;
+                    chart2.data.datasets[1].data = dirfixed;
+                    chart2.data.datasets[2].data = test_json.gust;
+                    chart2.data.datasets[3].data = test_json.lull;
+                    chart2.data.labels = test_json.time;
+                    chart2.update();
+
+
+                    console.log(test_json.time);
+                    console.log(test_json.avg);
+                    console.log(test_json.gust);
+                    console.log(test_json.lull);
+                    console.log(dirfixed);
+                    console.log(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+
+        }
         function onFailure(message) {
             console.log("Connection Attempt to Host " + host + "Failed");
             setTimeout(MQTTconnect, reconnectTimeout);
@@ -32,6 +72,7 @@
             if (msg.destinationName.search("wind") >= 0) {
                 plotWindData(wind_data);
             }
+            testapi();
         }
 
         // Convert a 0-360 degree direction to a compass point and degrees from it
@@ -197,6 +238,12 @@
         </div>
     </div>
 
+    <div class="w3-panel w3-pale-blue" style="direction: rtl; overflow-x: auto; overflow-y: hidden;">
+        <div style="width:3000px; height: 500px">
+            <canvas id="myChart2" height="500" width="0"></canvas>
+        </div>
+    </div>
+
     <div class="w3-panel w3-pale-blue">
         <p> The blue line is the direction. North is at the center of the chart.
             Updates occur every 5 minutes from 10AM to 9PM if it is windy. Otherwise it is only updated on the hour.
@@ -289,6 +336,70 @@
                 }
             }
         });
+
+        chart2 = new Chart("myChart2", {
+            type: "line",
+            data: {
+                datasets: [{
+                    label: "Wind Speed",
+                    pointRadius: 1,
+                    pointBackgroundColor: "rgb(0,0,255)",
+                    borderColor: "green",
+                    borderWidth: 4,
+                    fill: false,
+                }, {
+                    label: "Direction (North at middle)",
+                    pointRadius: 1,
+                    pointBackgroundColor: "rgb(0,0,255)",
+                    borderColor: "blue",
+                    fill: false,
+                    borderWidth: -1
+                }, {
+                    label: "Gusts",
+                    pointRadius: 2,
+                    pointBackgroundColor: "rgb(255,0,0)",
+                    borderColor: "red",
+                    fill: false,
+                    borderWidth: -1
+                }, {
+                    label: "Lulls",
+                    pointRadius: 3,
+                    pointBackgroundColor: "rgb(255,0,0)",
+                    borderColor: "black",
+                    fill: '-1',
+                    borderWidth: -1
+                },
+                ]
+            },
+            options: {
+                legend: { display: true },
+
+                scales: {
+                    xAxes: [{ ticks: { min: 40, max: 290 } }],
+                    yAxes: [{
+                        position: 'right',
+                        ticks: {
+                            fontSize: 25,
+                            min: 0,
+                            max: 40,
+                        }
+                    },
+                    {
+                        position: 'right',
+                        ticks: {
+                            fontColor: 'blue',
+                            fontSize: 25,
+                            min: 0, max: 8, callback: function (value) {
+                                var x = ["S", "SW", "W", "NW", "N", "NE", "E", "SE", "S"];
+                                return x[value % x.length];
+
+                            }
+                        }
+                    }],
+                }
+            }
+        });
+
     </script>
 </body>
 
