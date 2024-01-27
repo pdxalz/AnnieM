@@ -14,7 +14,8 @@
         var chart2;
         var latestTime = new Date(0);    // Time of most recent report
 
-        const apiUrl = 'http://127.0.0.1:8000';
+ //       const apiUrl = 'http://127.0.0.1:8000';
+        const apiUrl = 'http://192.168.68.113:8000';
 
         function testapi() {
             // Define the API URL
@@ -33,8 +34,8 @@
 
                     var dirfixed = test_json.dir.map(northCenter);
 
-                    chart2.data.datasets[0].data = test_json.avg;
-                    chart2.data.datasets[1].data = dirfixed;
+                    chart2.data.datasets[0].data = dirfixed;
+                    chart2.data.datasets[1].data = test_json.avg;
                     chart2.data.datasets[2].data = test_json.gust;
                     chart2.data.datasets[3].data = test_json.lull;
                     chart2.data.labels = test_json.time;
@@ -144,19 +145,19 @@
             type: "line",
             data: {
                 datasets: [{
-                    label: "Wind Speed",
-                    pointRadius: 1,
-                    pointBackgroundColor: "rgb(0,0,255)",
-                    borderColor: "green",
-                    borderWidth: 4,
-                    fill: false,
-                }, {
                     label: "Direction (North at middle)",
                     pointRadius: 1,
                     pointBackgroundColor: "rgb(0,0,255)",
                     borderColor: "blue",
                     fill: false,
                     borderWidth: -1
+                }, {
+                    label: "Wind Speed",
+                    pointRadius: 1,
+                    pointBackgroundColor: "rgb(0,0,255)",
+                    borderColor: "green",
+                    borderWidth: 4,
+                    fill: false,
                 }, {
                     label: "Gusts",
                     pointRadius: 2,

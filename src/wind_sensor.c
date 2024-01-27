@@ -136,7 +136,6 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	gmtime_r(&now, &tm);
 	int avg_speed;
 
-	//	int hour = tm.tm_hour;
 	int minute = tm.tm_min;
 
 	// only report if it's the first sample period of the report period
@@ -156,8 +155,9 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	sprintf(topicbuf, "%s/wind", CONFIG_MQTT_PRIMARY_TOPIC);
 	k_timer_stop(&wind_direction_timer);
 
-	int shorttime = tm.tm_min + tm.tm_hour * 100 + tm.tm_mday * 10000 + tm.tm_mon * 1000000;
-	sprintf(msgbuf, "{\"t\":%d, \"d\":%d,  \"a\":%d, \"g\":%d, \"l\":%d}", shorttime, wind_direction, avg_speed, gust, lull);
+	sprintf(msgbuf, "{\"t\":\"%d/%d/%d %d:%0d\", \"d\":%d, \"a\":%d, \"g\":%d, \"l\":%d}",
+		 tm.tm_mon+1, tm.tm_mday, tm.tm_year%100, tm.tm_hour, tm.tm_min,
+		  wind_direction, avg_speed, gust, lull);
 
 	bool end_of_hour = minute / 5 == 11;
 
@@ -174,7 +174,9 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 						   msgbuf, strlen(msgbuf), topicbuf, 0);
 		lull = 100;
 		gust = 0;
-
+		speed = 0;
+		sample_count = 0;
+		
 		if (err)
 		{
 			LOG_WRN("Failed to send message, %d\n", err);
