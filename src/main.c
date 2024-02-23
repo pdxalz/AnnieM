@@ -19,6 +19,7 @@
 #include "leds.h"
 #include "adc.h"
 #include "health.h"
+#include "cameraThread.h"
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
@@ -72,12 +73,14 @@ void main(void)
     turn_leds_on_with_color(WHITE);
 
     int err;
- 
+
     init_adc();
 
     modem_configure();
 
     turn_leds_on_with_color(YELLOW);
+    k_msleep(2000);
+    cameraThreadInit();
 
     err = client_init();
     if (err)
@@ -92,5 +95,5 @@ void main(void)
     init_wind_sensor();
     init_health();
 
-    mqtt_idleloop();  // does not return
+    mqtt_idleloop(); // does not return
 }

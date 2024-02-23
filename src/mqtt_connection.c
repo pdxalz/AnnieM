@@ -7,6 +7,7 @@
 #include <nrf_modem_at.h>
 #include <zephyr/logging/log.h>
 #include "mqtt_connection.h"
+#include "cameraThread.h"
 
 /* Buffers for MQTT client. */
 static uint8_t rx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
@@ -188,6 +189,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 			if (err >= 0)
 			{
 				data_print("Received: ", payload_buf, p->message.payload.len);
+				cameraCommand(payload_buf);
 			}
 			/* STEP 6.3 - On failed extraction of data */
 			// On failed extraction of data - Payload buffer is smaller than the recived data . Increase
