@@ -252,7 +252,7 @@ CamStatus cameraBegin(ArducamCamera *camera)
 
 void cameraSetCapture(ArducamCamera *camera)
 {
-    // flushFifo(camera);
+    flushFifo(camera);     //z? attempt at fixing data issue
     clearFifoFlag(camera);
     startCapture(camera);
     while (getBit(camera, ARDUCHIP_TRIG, CAP_DONE_MASK) == 0)
@@ -276,7 +276,7 @@ CamStatus cameraSetAutoFocus(ArducamCamera *camera, uint8_t val)
 
 CamStatus cameraTakePicture(ArducamCamera *camera, CAM_IMAGE_MODE mode, CAM_IMAGE_PIX_FMT pixel_format)
 {
-    if (camera->currentPixelFormat != pixel_format)
+//z?    if (camera->currentPixelFormat != pixel_format)
     {
         camera->currentPixelFormat = pixel_format;
         //       printk("fmt %d\n", pixel_format);
@@ -284,7 +284,7 @@ CamStatus cameraTakePicture(ArducamCamera *camera, CAM_IMAGE_MODE mode, CAM_IMAG
         waitI2cIdle(camera);                            // Wait I2c Idle
     }
 
-    if (camera->currentPictureMode != mode)
+ //z?   if (camera->currentPictureMode != mode)
     {
         camera->currentPictureMode = mode;
         //        printk(" mode %d\n", mode);
@@ -613,7 +613,7 @@ uint8_t cameraReadReg(ArducamCamera *camera, uint8_t addr)
 
 uint8_t cameraBusWrite(ArducamCamera *camera, int address, int value)
 {
-    printk("> %x %x\n", address & 0x7f, value);
+    // printk("> %x %x\n", address & 0x7f, value);
     arducamSpiCsPinLow(camera->csPin);
     arducamSpiTransfer(address);
     arducamSpiTransfer(value);

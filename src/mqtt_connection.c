@@ -138,7 +138,7 @@ int data_publish(enum mqtt_qos qos,
 	param.retain_flag = retain;
 	if (len > 2)
 	{
-		data_print("Pub: ", data, len);
+//		data_print("Pub: ", data, len);
 	}
 	//	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
 	return mqtt_publish(&client, &param);
@@ -173,7 +173,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 			/* STEP 6.1 - Extract the payload */
 			const struct mqtt_publish_param *p = &evt->param.publish;
 			// Print the length of the recived message
-			LOG_INF("MQTT PUBLISH result=%d len=%d\n", evt->result, p->message.payload.len);
+			// LOG_INF("MQTT PUBLISH result=%d len=%d\n", evt->result, p->message.payload.len);
 			// Extract the data of the recived message
 			err = get_received_payload(c, p->message.payload.len);
 			// Send acknowledgment to the broker on receiving QoS1 publish message
@@ -188,7 +188,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 			// On successful extraction of data
 			if (err >= 0)
 			{
-				data_print("Received: ", payload_buf, p->message.payload.len);
+				// data_print("Received: ", payload_buf, p->message.payload.len);
 				cameraCommand(payload_buf);
 			}
 			/* STEP 6.3 - On failed extraction of data */
