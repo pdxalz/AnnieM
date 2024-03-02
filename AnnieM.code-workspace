@@ -28,7 +28,8 @@
 			"wind_sensor.h": "c",
 			"photo.h": "c",
 			"console.h": "c",
-			"camerathread.h": "c"
+			"camerathread.h": "c",
+			"uart_console.h": "c"
 		},
 		"nrf-connect.topdir": "${nrf-connect.sdk:2.2.0}",
 		"nrf-connect.toolchain.path": "${nrf-connect.toolchain:2.2.0}",

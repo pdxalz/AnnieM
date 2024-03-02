@@ -58,7 +58,6 @@ void app_take_pict(uint8_t image_mode)
 	takePicture(&camera, image_mode, CAM_IMAGE_PIX_FMT_JPG);
 	printk("START\n");
 	printk("length= %d\n", camera.totalLength);
-k_msleep(100);
 	int count = 0;
 	while (camera.receivedLength > 0)
 	{
@@ -69,7 +68,6 @@ k_msleep(100);
 		{
 			count = 0;
 			printk("\n");
-k_msleep(100);
 		}
 	}
 	printk("\nEND\n");
@@ -80,64 +78,65 @@ void camera_work_handler(struct k_work *work)
 	struct work_info *pinfo = CONTAINER_OF(work, struct work_info, work);
 
 	printk("command: %c %d\n", pinfo->cmd, pinfo->param);
+k_msleep(4000);
 
 	switch (pinfo->cmd)
 	{
 	case 'b':
-		printk("setBrightness %d\n", pinfo->param);
 		setBrightness(&camera, pinfo->param);
+		printk("setBrightness %d\n", pinfo->param);
 		break;
 
 	case 'c':
-		printk("setContrast %d\n", pinfo->param);
 		setContrast(&camera, pinfo->param);
+		printk("setContrast %d\n", pinfo->param);
 		break;
 
 	case 'd':
-		printk("setColorEffect %d\n", pinfo->param);
 		setColorEffect(&camera, pinfo->param);
+		printk("setColorEffect %d\n", pinfo->param);
 		break;
 
 	case 'e':
-		printk("setEV %d\n", pinfo->param);
 		setEV(&camera, pinfo->param);
+		printk("setEV %d\n", pinfo->param);
 		break;
 
 	case 'f':
-		printk("setAutoFocus %d\n", pinfo->param);
 		setAutoFocus(&camera, pinfo->param);
+		printk("setAutoFocus %d\n", pinfo->param);
 		break;
 
 	case 'g':
-		printk("setAutoExposure %d\n", pinfo->param);
 		setAutoExposure(&camera, pinfo->param);
+		printk("setAutoExposure %d\n", pinfo->param);
 		break;
 
 	case 'h':
-		printk("setAbsoluteExposure %d\n", pinfo->param);
 		setAbsoluteExposure(&camera, pinfo->param);
+		printk("setAbsoluteExposure %d\n", pinfo->param);
 		break;
 
 	case 'i':
-		printk("setISOSensitivity %d\n", pinfo->param);
 		setISOSensitivity(&camera, pinfo->param);
+		printk("setISOSensitivity %d\n", pinfo->param);
 		break;
 
 	case 'j':
-		printk("setAutoISOSensitive %d\n", pinfo->param);
 		setAutoISOSensitive(&camera, pinfo->param);
+		printk("setAutoISOSensitive %d\n", pinfo->param);
 		break;
 
 	case 'l':
 		if (pinfo->param)
 		{
-			printk("lowPowerOn\n");
 			lowPowerOn(&camera);
+			printk("lowPowerOn\n");
 		}
 		else
 		{
-			printk("lowPowerOff\n");
 			lowPowerOff(&camera);
+			printk("lowPowerOff\n");
 		}
 		break;
 
@@ -147,34 +146,36 @@ void camera_work_handler(struct k_work *work)
 		break;
 
 	case 'q':
-		printk("setImageQuality %d\n", pinfo->param);
 		setImageQuality(&camera, pinfo->param);
+		printk("setImageQuality %d\n", pinfo->param);
 		break;
 
 	case 'r':
-		printk("reset\n");
 		reset(&camera);
+		printk("reset\n");
 		break;
 
 	case 's':
-		printk("setSharpness %d\n", pinfo->param);
 		setSharpness(&camera, pinfo->param);
+		printk("setSharpness %d\n", pinfo->param);
 		break;
 
 	case 'u':
-		printk("setSaturation %d\n", pinfo->param);
 		setSaturation(&camera, pinfo->param);
+		printk("setSaturation %d\n", pinfo->param);
 		break;
 
 	case 'w':
-		printk("setAutoWhiteBalance %d\n", pinfo->param);
 		setAutoWhiteBalance(&camera, pinfo->param);
+		printk("setAutoWhiteBalance %d\n", pinfo->param);
 		break;
 
 	case 'x':
-		printk("setAutoWhiteBalanceMode %d\n", pinfo->param);
 		setAutoWhiteBalanceMode(&camera, pinfo->param);
+		printk("setAutoWhiteBalanceMode %d\n", pinfo->param);
 		break;
+	
+	default:
 	}
 }
 
