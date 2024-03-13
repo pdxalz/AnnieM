@@ -12,6 +12,8 @@
 #include "adc.h"
 #include "health.h"
 #include "leds.h"
+#include "cameraThread.h"
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(sensor, LOG_LEVEL_INF);
 
@@ -156,8 +158,8 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	k_timer_stop(&wind_direction_timer);
 
 	sprintf(msgbuf, "{\"t\":\"%d/%d/%d %d:%0d\", \"d\":%d, \"a\":%d, \"g\":%d, \"l\":%d}",
-		 tm.tm_mon+1, tm.tm_mday, tm.tm_year%100, tm.tm_hour, tm.tm_min,
-		  wind_direction, avg_speed, gust, lull);
+			tm.tm_mon + 1, tm.tm_mday, tm.tm_year % 100, tm.tm_hour, tm.tm_min,
+			wind_direction, avg_speed, gust, lull);
 
 	bool end_of_hour = minute / 5 == 11;
 
@@ -168,6 +170,13 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 		( // hour > 9 && hour < 21 &&
 			(avg_speed >= 0)))
 	{
+		// todo: necessary?  wait for photo to finish
+		while (sending_photo())
+		{
+			turn_leds_on_with_color(WHITE);
+			k_msleep(1000);
+		}
+		turn_leds_on_with_color(MAGENTA);
 
 		int err;
 		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
@@ -176,7 +185,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 		gust = 0;
 		speed = 0;
 		sample_count = 0;
-		
+
 		if (err)
 		{
 			LOG_WRN("Failed to send message, %d\n", err);
@@ -187,7 +196,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	{
 		k_msleep(1000);
 		turn_leds_on_with_color(RED);
-		//		publish_health_data();
+		publish_health_data();
 	}
 }
 
