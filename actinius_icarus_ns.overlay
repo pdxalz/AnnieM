@@ -8,15 +8,15 @@
 // * Removing the node
 // * Connecting ADC channels
 
-// For more help, browse the DeviceTree documentation at https://docs.zephyrproject.org/latest/guides/dts/index.html
-// You can also visit the nRF DeviceTree extension documentation at https://nrfconnect.github.io/vscode-nrf-connect/devicetree/nrfdevicetree.html
+// For more help, browse the DeviceTree documentation at https: //docs.zephyrproject.org/latest/guides/dts/index.html
+// You can also visit the nRF DeviceTree extension documentation at https: //nrfconnect.github.io/vscode-nrf-connect/devicetree/nrfdevicetree.html
 /{
-    wind_speed {
-        compatible = "gpio-keys";
-        windspeed0: wind_speed_0 {
-            gpios = <&gpio0 16 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-        };
-    };
+	wind_speed {
+		compatible = "gpio-keys";
+		windspeed0: wind_speed_0 {
+			gpios = <&gpio0 16 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+		};
+	};
 
 	vbatt {
 		compatible = "voltage-divider";
@@ -29,16 +29,26 @@
 			gpios = <&gpio0 19 GPIO_ACTIVE_LOW>;
 			label = "SPI CS";
 		};
+		gpio_ext_pwr: ext_pwr {
+			gpios = <&gpio0 18 GPIO_ACTIVE_HIGH>;
+			label = "EXT_PWR";
+		};
+		gpio_testpin: testpin {
+			gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+			label = "TESTPIN";
+		};
 	};
 
-    aliases {
+	aliases {
 		windspeed0 = &windspeed0;
 		cs0 = &gpio_spi_cs;
-    };
+		extpwr = &gpio_ext_pwr;
+		testpin = &gpio_testpin;
+	};
 };
 
 &sim_select {
-    sim = "external";
+	sim = "external";
 };
 
 &pwm0 {

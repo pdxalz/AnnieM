@@ -19,4 +19,11 @@ void spiCsOutputMode(int pin);
 void delayMs(uint16_t val);
 void delayUs(uint16_t val);
 
+
+void extPwrOn();
+void extPwrOff(); 
+void testPinOn();
+void testPinOff();
+void cameraDeviceInit();
+
 #endif /*__NRFHAL_H*/

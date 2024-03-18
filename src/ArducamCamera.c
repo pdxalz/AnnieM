@@ -250,6 +250,19 @@ CamStatus cameraBegin(ArducamCamera *camera)
     return CAM_ERR_SUCCESS;
 }
 
+void cameraPowerUp(ArducamCamera *camera)
+{
+    extPwrOn();
+    delayMs(200);
+    writeReg(camera, CAM_REG_DEBUG_DEVICE_ADDRESS, camera->myCameraInfo.deviceAddress); // z move
+    waitI2cIdle(camera);
+}
+
+void cameraPowerDown(ArducamCamera *camera)
+{
+    extPwrOff();
+}
+
 void cameraSetCapture(ArducamCamera *camera)
 {
     flushFifo(camera);     //z? attempt at fixing data issue

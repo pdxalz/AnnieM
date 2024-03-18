@@ -8,6 +8,8 @@
 #define MY_SPI_MASTER DT_NODELABEL(my_spi_master)
 #define LED0_NODE DT_ALIAS(led0)
 #define CS0_NODE DT_ALIAS(cs0)
+#define EXT_PWR_NODE DT_ALIAS(extpwr)
+#define TESTPIN_NODE DT_ALIAS(testpin)
 
 // SPI master functionality
 const struct device *spi_dev;
@@ -19,9 +21,12 @@ struct spi_cs_control spim_cs = {
 };
 
 static const struct gpio_dt_spec spi_cs = GPIO_DT_SPEC_GET(CS0_NODE, gpios);
+static const struct gpio_dt_spec ext_pwr = GPIO_DT_SPEC_GET(EXT_PWR_NODE, gpios);
+static const struct gpio_dt_spec testpin = GPIO_DT_SPEC_GET(TESTPIN_NODE, gpios);
 
 void spiBegin()
 {
+	int ret;
 
 	spi_dev = DEVICE_DT_GET(MY_SPI_MASTER);
 	if(!device_is_ready(spi_dev)) {
@@ -30,7 +35,18 @@ void spiBegin()
 	if(!device_is_ready(spim_cs.gpio.port)){
 		printk("SPI master chip select device not ready!\n");
 	}
-    
+
+	// if (!device_is_ready(spi_cs.port)) {
+	// 	return;
+	// }
+
+	// ret = gpio_pin_configure_dt(&spi_cs, GPIO_OUTPUT_ACTIVE);
+	// if (ret < 0) {
+	// 	return;
+	// }
+	
+
+	printk("spi initialized\n");    
 }
 
 static const struct spi_config spi_cfg = {
@@ -158,6 +174,47 @@ void spiCsOutputMode(int pin)
 	if (ret < 0) {
 		return;
 	}
+
+	if (!device_is_ready(ext_pwr.port)) {
+		return;
+	}
+	ret = gpio_pin_configure_dt(&ext_pwr, GPIO_OUTPUT_ACTIVE);
+	if (ret < 0) {
+		return;
+	}
+	
+	if (!device_is_ready(testpin.port)) {
+		return;
+	}
+	ret = gpio_pin_configure_dt(&testpin, GPIO_OUTPUT_ACTIVE);
+	if (ret < 0) {
+		return;
+	}	
+
+	extPwrOn();
+	delayMs(200);
+	printk("gpios initialized\n");
+}
+
+
+void extPwrOn()        // Set the EXT_PWR pin  to high level
+{
+	gpio_pin_set_dt(&ext_pwr,1);
+}
+
+void extPwrOff()         // Set the EXT_PWR pin of SPI to low level
+{
+	gpio_pin_set_dt(&ext_pwr,0);
+}
+
+void testPinOn()        // Set the EXT_PWR pin  to high level
+{
+	gpio_pin_set_dt(&testpin,1);
+}
+
+void testPinOff()         // Set the EXT_PWR pin of SPI to low level
+{
+	gpio_pin_set_dt(&testpin,0);
 }
 
 void delayMs(uint16_t val) //  Delay Ms
