@@ -8,12 +8,12 @@
 #include "cameraThread.h"
 #include "ArducamCamera.h"
 
-#define PIC_BUFFER_SIZE 512 // CONFIG_MQTT_MESSAGE_BUFFER_SIZE
-#define WORK_DELAY 1000
-#define PICT_DELAY 1000
-#define START_DELAY 1000
-#define DATA_DELAY 200
-#define END_DELAY 1000
+#define PIC_BUFFER_SIZE 1024 // CONFIG_MQTT_MESSAGE_BUFFER_SIZE
+#define WORK_DELAY 400		 // image dim if quick startup
+#define PICT_DELAY 1
+#define START_DELAY 1
+#define DATA_DELAY 200 // image fails if too quick
+#define END_DELAY 1
 
 #define CAMERA_THREAD_STACK_SIZE 4096
 #define WORKQ_PRIORITY 4
@@ -109,10 +109,11 @@ void app_take_pict(uint8_t mode_index)
 		{
 			length = camera.receivedLength;
 		}
-		for (int i = 0; i < length; ++i)
-		{
-			pic_buffer[i] = readByte(&camera);
-		}
+		readBuff(&camera, pic_buffer, length);
+		// for (int i = 0; i < length; ++i)
+		// {
+		// 	pic_buffer[i] = readByte(&camera);
+		// }
 		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, pic_buffer, length, "zimbuktu/jpgData", 0);
 		k_msleep(DATA_DELAY);
 	}
@@ -242,51 +243,10 @@ void app_take_pict_serial_buffer(uint8_t mode_index)
 }
 #endif
 
-#if 0
-void app_take_pict(uint8_t mode_index)
-{
-	uint8_t mode = image_modes[mode_index].mode;
-	sending = true;
-
-	takePicture(&camera, mode, CAM_IMAGE_PIX_FMT_JPG);
-	printk("START\n");
-	printk("length= %d\n", camera.totalLength);
-
-	if (camera.receivedLength < image_modes[mode_index].min ||
-		camera.receivedLength > image_modes[mode_index].max)
-	{
-		sprintf(pic_buffer, "%d < %d %d", image_modes[mode_index].min, camera.receivedLength, image_modes[mode_index].min);
-		printk("Length error\n");
-
-		sending = false;
-		return;
-	}
-#define PBSIZE 40
-	char uartbuf[PBSIZE + 2];
-	uint8_t picbuf[PBSIZE];
-	int len = 0;
-	while (camera.receivedLength > 0)
-	{
-		if (PBSIZE < camera.receivedLength)
-			len = (PBSIZE < camera.receivedLength) ? PBSIZE : camera.receivedLength;
-		readBuff(&camera, picbuf, len);
-
-		char * p = uartbuf;
-		for (int i = 0; i < len; ++i)
-		{
-			p += snprintk(p, 3, "%02x", picbuf[i]);
-		}
-		printk("%s\n", uartbuf);
-	}
-	printk("\nEND\n");
-	sending = false;
-}
-#endif
-
 void camera_work_handler(struct k_work *work)
 {
 	struct work_info *pinfo = CONTAINER_OF(work, struct work_info, work);
-		printk("camera_work_handler start\n");
+	printk("camera_work_handler start\n");
 
 	if (CAM_ERR_SUCCESS == begin(&camera))
 	{
@@ -298,7 +258,6 @@ void camera_work_handler(struct k_work *work)
 	}
 	// printk("%s\n", camera.myCameraInfo.cameraId);
 	// printk("res %d id %d\n", camera.myCameraInfo.supportResolution, camera.cameraId);
-
 
 	printk("command: %c %d\n", pinfo->cmd, pinfo->param);
 	k_msleep(WORK_DELAY);

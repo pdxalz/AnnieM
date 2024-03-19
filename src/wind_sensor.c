@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(sensor, LOG_LEVEL_INF);
 
 #define SECONDS_PER_SAMPLE (60) // 60 is the minimum, lower requires code fix
 #define SAMPLE_DURATION 6
-#define REPORTS_PER_HOUR 30 // 6 is every 10 minutes
+#define REPORTS_PER_HOUR 6 // 6 is every 10 minutes
 #define MINUTES_PER_REPORT (60 / REPORTS_PER_HOUR)
 
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)

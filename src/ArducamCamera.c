@@ -232,9 +232,9 @@ void cameraGetSensorConfig(ArducamCamera *camera)
 
 CamStatus cameraBegin(ArducamCamera *camera)
 {
-	extPwrOn();     // power on
-	delayMs(200);
-		printk("pwr on\n");
+    extPwrOn(); // power on
+    delayMs(200);
+    printk("pwr on\n");
 
     // reset cpld and camera
     writeReg(camera, CAM_REG_SENSOR_RESET, CAM_SENSOR_RESET_ENABLE);
@@ -256,14 +256,13 @@ CamStatus cameraBegin(ArducamCamera *camera)
 
 CamStatus cameraComplete(ArducamCamera *camera)
 {
-    extPwrOff();     // power off
+    extPwrOff(); // power off
     return CAM_ERR_SUCCESS;
 }
 
-
 void cameraSetCapture(ArducamCamera *camera)
 {
-    flushFifo(camera);     //z? attempt at fixing data issue
+    flushFifo(camera); // z? attempt at fixing data issue
     clearFifoFlag(camera);
     startCapture(camera);
     while (getBit(camera, ARDUCHIP_TRIG, CAP_DONE_MASK) == 0)
@@ -287,22 +286,13 @@ CamStatus cameraSetAutoFocus(ArducamCamera *camera, uint8_t val)
 
 CamStatus cameraTakePicture(ArducamCamera *camera, CAM_IMAGE_MODE mode, CAM_IMAGE_PIX_FMT pixel_format)
 {
-//z?    if (camera->currentPixelFormat != pixel_format)
-    {
-        camera->currentPixelFormat = pixel_format;
-        //       printk("fmt %d\n", pixel_format);
-        writeReg(camera, CAM_REG_FORMAT, pixel_format); // set the data format
-        waitI2cIdle(camera);                            // Wait I2c Idle
-    }
+    writeReg(camera, CAM_REG_FORMAT, pixel_format); // set the data format
+    waitI2cIdle(camera);                            // Wait I2c Idle
 
- //z?   if (camera->currentPictureMode != mode)
-    {
-        camera->currentPictureMode = mode;
-        //        printk(" mode %d\n", mode);
-        writeReg(camera, CAM_REG_CAPTURE_RESOLUTION, CAM_SET_CAPTURE_MODE | mode);
-        waitI2cIdle(camera); // Wait I2c Idle
-        delayMs(100);  // issue where mode change sometime misses
-    }
+    writeReg(camera, CAM_REG_CAPTURE_RESOLUTION, CAM_SET_CAPTURE_MODE | mode);
+    waitI2cIdle(camera); // Wait I2c Idle
+
+    delayMs(100); // issue where mode change sometime misses
 
     setCapture(camera);
     return CAM_ERR_SUCCESS;
