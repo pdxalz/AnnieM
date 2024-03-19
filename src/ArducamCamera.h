@@ -668,10 +668,7 @@ void lowPowerOff(ArducamCamera* camera);
 //**********************************************
 uint8_t cameraHeartBeat(ArducamCamera* camera);
 
-
-void cameraPowerUp(ArducamCamera *camera);
-void cameraPowerDown(ArducamCamera *camera);
-
+CamStatus cameraComplete(ArducamCamera *camera);
 
 typedef enum { Camera_uninit = 0, Camera_init, Camera_open, Camera_close } CameraStatus;
 

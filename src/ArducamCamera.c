@@ -232,6 +232,10 @@ void cameraGetSensorConfig(ArducamCamera *camera)
 
 CamStatus cameraBegin(ArducamCamera *camera)
 {
+	extPwrOn();     // power on
+	delayMs(200);
+		printk("pwr on\n");
+
     // reset cpld and camera
     writeReg(camera, CAM_REG_SENSOR_RESET, CAM_SENSOR_RESET_ENABLE);
     waitI2cIdle(camera); // Wait I2c Idle
@@ -250,18 +254,12 @@ CamStatus cameraBegin(ArducamCamera *camera)
     return CAM_ERR_SUCCESS;
 }
 
-void cameraPowerUp(ArducamCamera *camera)
+CamStatus cameraComplete(ArducamCamera *camera)
 {
-    extPwrOn();
-    delayMs(200);
-    writeReg(camera, CAM_REG_DEBUG_DEVICE_ADDRESS, camera->myCameraInfo.deviceAddress); // z move
-    waitI2cIdle(camera);
+    extPwrOff();     // power off
+    return CAM_ERR_SUCCESS;
 }
 
-void cameraPowerDown(ArducamCamera *camera)
-{
-    extPwrOff();
-}
 
 void cameraSetCapture(ArducamCamera *camera)
 {
@@ -906,6 +904,7 @@ ArducamCamera createArducamCamera(int CS)
     // camera.arducamCameraOp    = &ArducamcameraOperations;
     camera.currentSDK = &currentSDK;
     cameraInit(&camera);
+    extPwrOff();
     return camera;
 }
 

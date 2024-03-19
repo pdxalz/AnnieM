@@ -188,7 +188,6 @@ void app_take_pict_send_serial(uint8_t mode_index)
 		{
 			count = 0;
 			printk("\n");
-			data_publish(MQTT_QOS_1_AT_LEAST_ONCE, "Z", 1, "zimbuktu/jpgEnd", 0);
 			k_msleep(DATA_DELAY);
 		}
 	}
@@ -236,7 +235,6 @@ void app_take_pict_serial_buffer(uint8_t mode_index)
 			p += snprintk(p, 3, "%02x", pic_buffer[i]);
 		}
 		printk("%s\n", uartbuf);
-		data_publish(MQTT_QOS_1_AT_LEAST_ONCE, "Z", 1, "zimbuktu/jpgEnd", 0);
 		k_msleep(DATA_DELAY);
 	}
 	printk("\nEND\n");
@@ -288,6 +286,19 @@ void app_take_pict(uint8_t mode_index)
 void camera_work_handler(struct k_work *work)
 {
 	struct work_info *pinfo = CONTAINER_OF(work, struct work_info, work);
+		printk("camera_work_handler start\n");
+
+	if (CAM_ERR_SUCCESS == begin(&camera))
+	{
+		printk("init ok\n");
+	}
+	else
+	{
+		printk("init failed\n");
+	}
+	// printk("%s\n", camera.myCameraInfo.cameraId);
+	// printk("res %d id %d\n", camera.myCameraInfo.supportResolution, camera.cameraId);
+
 
 	printk("command: %c %d\n", pinfo->cmd, pinfo->param);
 	k_msleep(WORK_DELAY);
@@ -400,6 +411,7 @@ void camera_work_handler(struct k_work *work)
 
 	default:
 	}
+	cameraComplete(&camera);
 }
 
 void cameraCommand(char *cmd)
@@ -423,16 +435,6 @@ void cameraThreadInit()
 {
 	printk("init start\n");
 	camera = createArducamCamera(1);
-	if (CAM_ERR_SUCCESS == begin(&camera))
-	{
-		printk("init ok\n");
-	}
-	else
-	{
-		printk("init failed\n");
-	}
-	// printk("%s\n", camera.myCameraInfo.cameraId);
-	// printk("res %d id %d\n", camera.myCameraInfo.supportResolution, camera.cameraId);
 
 	k_work_queue_start(&camera_work_q, camera_stack_area,
 					   K_THREAD_STACK_SIZEOF(camera_stack_area), WORKQ_PRIORITY,

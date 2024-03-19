@@ -26,8 +26,6 @@ static const struct gpio_dt_spec testpin = GPIO_DT_SPEC_GET(TESTPIN_NODE, gpios)
 
 void spiBegin()
 {
-	int ret;
-
 	spi_dev = DEVICE_DT_GET(MY_SPI_MASTER);
 	if(!device_is_ready(spi_dev)) {
 		printk("SPI master device not ready!\n");
@@ -35,16 +33,6 @@ void spiBegin()
 	if(!device_is_ready(spim_cs.gpio.port)){
 		printk("SPI master chip select device not ready!\n");
 	}
-
-	// if (!device_is_ready(spi_cs.port)) {
-	// 	return;
-	// }
-
-	// ret = gpio_pin_configure_dt(&spi_cs, GPIO_OUTPUT_ACTIVE);
-	// if (ret < 0) {
-	// 	return;
-	// }
-	
 
 	printk("spi initialized\n");    
 }
@@ -191,8 +179,6 @@ void spiCsOutputMode(int pin)
 		return;
 	}	
 
-	extPwrOn();
-	delayMs(200);
 	printk("gpios initialized\n");
 }
 
