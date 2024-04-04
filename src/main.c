@@ -12,6 +12,7 @@
 
 #include <zephyr/net/mqtt.h>
 #include <date_time.h>
+#include <modem/modem_info.h>
 
 #include "mqtt_connection.h"
 #include "wind_sensor.h"
@@ -20,6 +21,7 @@
 #include "adc.h"
 #include "health.h"
 #include "cameraThread.h"
+#include "watchdog.h"
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
@@ -64,15 +66,23 @@ static void modem_configure(void)
     k_sem_take(&lte_connected, K_FOREVER);
     turn_leds_on_with_color(CYAN);
 
+    err = modem_info_init();
+    if (err)
+    {
+        LOG_ERR("Failed to initialize modem info: %d", err);
+    }
+    
     LOG_INF("Connected to LTE network\n");
 }
 
 void main(void)
 {
+    int err;
+
     init_leds();
     turn_leds_on_with_color(WHITE);
 
-    int err;
+    watchdog_init_and_start();
 
     init_adc();
 

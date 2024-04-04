@@ -85,3 +85,7 @@ my_spi_master: &spi3 {
 		reg = <0>;
 	};
 };
+
+&wdt {
+	status = "okay";
+};

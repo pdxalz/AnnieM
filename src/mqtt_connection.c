@@ -108,14 +108,14 @@ static int subscribe(struct mqtt_client *const c)
 
 /**@brief Function to print strings without null-termination
  */
-// static void data_print(uint8_t *prefix, uint8_t *data, size_t len)
-// {
-// 	char buf[len + 1];
+static void data_print(uint8_t *prefix, uint8_t *data, size_t len)
+{
+	char buf[len + 1];
 
-// 	memcpy(buf, data, len);
-// 	buf[len] = 0;
-// 	printk("%s%s\n", (char *)prefix, (char *)buf);
-// }
+	memcpy(buf, data, len);
+	buf[len] = 0;
+	printk("%s%s\n", (char *)prefix, (char *)buf);
+}
 
 /**@brief Function to publish data on the configured topic
  */
@@ -123,8 +123,13 @@ static int subscribe(struct mqtt_client *const c)
 int data_publish(enum mqtt_qos qos,
 				 uint8_t *data, size_t len, uint8_t *topic, uint8_t retain)
 {
-	k_sem_take(&publish_sem, K_MSEC(19000));
-
+	printk("data_publish\n");
+	if (0 != k_sem_take(&publish_sem, K_MSEC(19000)))
+	{
+		printk("data_publish timeout\n");
+		return -1;
+	}
+	printk("data_publish taken\n");
 	if (len > CONFIG_MQTT_MESSAGE_BUFFER_SIZE)
 	{
 		LOG_ERR("_mqtt_message_buf overflow: %d\n", len);
@@ -139,11 +144,11 @@ int data_publish(enum mqtt_qos qos,
 	param.message_id = sys_rand32_get();
 	param.dup_flag = 0;
 	param.retain_flag = retain;
-	if (len > 2)
+	if (len > 2 & len < 100)
 	{
-		//		data_print("Pub: ", data, len);
+		data_print("Pub: ", data, len);
 	}
-	//	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
+	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
 	return mqtt_publish(&client, &param);
 }
 
@@ -191,7 +196,6 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 			// On successful extraction of data
 			if (err >= 0)
 			{
-				// data_print("Received: ", payload_buf, p->message.payload.len);
 				cameraCommand(payload_buf);
 			}
 			/* STEP 6.3 - On failed extraction of data */
@@ -223,7 +227,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 		}
 		k_sem_give(&publish_sem);
 
-//		printk("PUBACK packet id: %u\n", evt->param.puback.message_id);
+		//		printk("PUBACK packet id: %u\n", evt->param.puback.message_id);
 		break;
 
 	case MQTT_EVT_SUBACK:

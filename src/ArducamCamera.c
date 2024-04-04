@@ -143,7 +143,7 @@ uint32_t readFifoLength(ArducamCamera *camera);
 uint8_t getBit(ArducamCamera *camera, uint8_t addr, uint8_t bit);
 void setFifoBurst(ArducamCamera *camera);
 void setCapture(ArducamCamera *camera);
-void waitI2cIdle(ArducamCamera *camera);
+CamStatus waitI2cIdle(ArducamCamera *camera);
 uint32_t imageAvailable(ArducamCamera *camera);
 void flushFifo(ArducamCamera *camera);
 void startCapture(ArducamCamera *camera);
@@ -238,18 +238,18 @@ CamStatus cameraBegin(ArducamCamera *camera)
 
     // reset cpld and camera
     writeReg(camera, CAM_REG_SENSOR_RESET, CAM_SENSOR_RESET_ENABLE);
-    waitI2cIdle(camera); // Wait I2c Idle
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
     cameraGetSensorConfig(camera);
     camera->verDateAndNumber[0] = readReg(camera, CAM_REG_YEAR_ID) & 0x3F; // year
-    waitI2cIdle(camera);
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
     camera->verDateAndNumber[1] = readReg(camera, CAM_REG_MONTH_ID) & 0x0F; // month
-    waitI2cIdle(camera);
+     if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
     camera->verDateAndNumber[2] = readReg(camera, CAM_REG_DAY_ID) & 0x1F; // day
-    waitI2cIdle(camera);
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
     camera->verDateAndNumber[3] = readReg(camera, CAM_REG_FPGA_VERSION_NUMBER) & 0xFF; // day
-    waitI2cIdle(camera);
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
 
-    writeReg(camera, CAM_REG_DEBUG_DEVICE_ADDRESS, camera->myCameraInfo.deviceAddress);
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
     waitI2cIdle(camera);
     return CAM_ERR_SUCCESS;
 }
@@ -287,10 +287,10 @@ CamStatus cameraSetAutoFocus(ArducamCamera *camera, uint8_t val)
 CamStatus cameraTakePicture(ArducamCamera *camera, CAM_IMAGE_MODE mode, CAM_IMAGE_PIX_FMT pixel_format)
 {
     writeReg(camera, CAM_REG_FORMAT, pixel_format); // set the data format
-    waitI2cIdle(camera);                            // Wait I2c Idle
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
 
     writeReg(camera, CAM_REG_CAPTURE_RESOLUTION, CAM_SET_CAPTURE_MODE | mode);
-    waitI2cIdle(camera); // Wait I2c Idle
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
 
     delayMs(100); // issue where mode change sometime misses
 
@@ -643,12 +643,18 @@ uint8_t cameraBusRead(ArducamCamera *camera, int address)
     return value;
 }
 
-void cameraWaitI2cIdle(ArducamCamera *camera)
+CamStatus cameraWaitI2cIdle(ArducamCamera *camera)
 {
+    uint32_t timeout = 5000;
     while ((readReg(camera, CAM_REG_SENSOR_STATE) & 0X03) != CAM_REG_SENSOR_STATE_IDLE)
     {
         arducamDelayMs(2);
+        if (--timeout == 0)
+        {
+            return CAM_ERR_TIMEOUT;
+        }
     }
+    return CAM_ERR_SUCCESS;
 }
 
 uint8_t cameraHeartBeat(ArducamCamera *camera)
@@ -858,9 +864,9 @@ void setCapture(ArducamCamera *camera)
 {
     cameraSetCapture(camera);
 }
-void waitI2cIdle(ArducamCamera *camera)
+CamStatus waitI2cIdle(ArducamCamera *camera)
 {
-    cameraWaitI2cIdle(camera);
+    return cameraWaitI2cIdle(camera);
 }
 
 uint32_t imageAvailable(ArducamCamera *camera)

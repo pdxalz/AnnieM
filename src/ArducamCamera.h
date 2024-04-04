@@ -82,6 +82,8 @@ struct CameraInfo {
 typedef enum {
     CAM_ERR_SUCCESS     = 0,  /**<Operation succeeded*/
     CAM_ERR_NO_CALLBACK = -1, /**< No callback function is registered*/
+    CAM_ERR_TIMEOUT = -2, /**< Timeout waiting for ready */
+    CAM_ERR_LENGTH = -3, /**< capture length bad */
 } CamStatus;
 
 /**

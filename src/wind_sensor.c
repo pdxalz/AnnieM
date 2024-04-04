@@ -13,13 +13,14 @@
 #include "health.h"
 #include "leds.h"
 #include "cameraThread.h"
+#include "watchdog.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(sensor, LOG_LEVEL_INF);
 
 #define SECONDS_PER_SAMPLE (60) // 60 is the minimum, lower requires code fix
 #define SAMPLE_DURATION 6
-#define REPORTS_PER_HOUR 6 // 6 is every 10 minutes
+#define REPORTS_PER_HOUR 30 // 6 is every 10 minutes
 #define MINUTES_PER_REPORT (60 / REPORTS_PER_HOUR)
 
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
@@ -137,7 +138,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	struct tm tm;
 	gmtime_r(&now, &tm);
 	int avg_speed;
-
+	printk("publish_reports_work_cb\n");
 	int minute = tm.tm_min;
 
 	// only report if it's the first sample period of the report period
@@ -175,12 +176,15 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 		{
 			turn_leds_on_with_color(WHITE);
 			k_msleep(1000);
+			printk("Waiting for photo to finish\n");
 		}
 		turn_leds_on_with_color(MAGENTA);
 
 		int err;
+		printk("Sending wind data\n");
 		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
 						   msgbuf, strlen(msgbuf), topicbuf, 0);
+		printk("Wind data sent\n");
 		lull = 100;
 		gust = 0;
 		speed = 0;
@@ -191,6 +195,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 			LOG_WRN("Failed to send message, %d\n", err);
 			return;
 		}
+		watchdog_still_running();
 	}
 	if (end_of_hour)
 	{
