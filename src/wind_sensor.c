@@ -20,7 +20,7 @@ LOG_MODULE_REGISTER(sensor, LOG_LEVEL_INF);
 
 #define SECONDS_PER_SAMPLE (60) // 60 is the minimum, lower requires code fix
 #define SAMPLE_DURATION 6
-#define REPORTS_PER_HOUR 30 // 6 is every 10 minutes
+#define REPORTS_PER_HOUR 6 // 6 is every 10 minutes
 #define MINUTES_PER_REPORT (60 / REPORTS_PER_HOUR)
 
 #define WIND_SPEED_NODE DT_ALIAS(windspeed0)
@@ -162,42 +162,36 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 			tm.tm_mon + 1, tm.tm_mday, tm.tm_year % 100, tm.tm_hour, tm.tm_min,
 			wind_direction, avg_speed, gust, lull);
 
-	bool end_of_hour = minute / 5 == 11;
 
-	// always publish data just before the next hour, or
-	// publish only if the time is between 10AM and 9PM and
-	// the speed is higher than 5
-	if (end_of_hour ||
-		( // hour > 9 && hour < 21 &&
-			(avg_speed >= 0)))
+	// todo: necessary?  wait for photo to finish
+	while (sending_photo())
 	{
-		// todo: necessary?  wait for photo to finish
-		while (sending_photo())
-		{
-			turn_leds_on_with_color(WHITE);
-			k_msleep(1000);
-			printk("Waiting for photo to finish\n");
-		}
-		turn_leds_on_with_color(MAGENTA);
-
-		int err;
-		printk("Sending wind data\n");
-		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
-						   msgbuf, strlen(msgbuf), topicbuf, 0);
-		printk("Wind data sent\n");
-		lull = 100;
-		gust = 0;
-		speed = 0;
-		sample_count = 0;
-
-		if (err)
-		{
-			LOG_WRN("Failed to send message, %d\n", err);
-			return;
-		}
-		watchdog_still_running();
+		turn_leds_on_with_color(WHITE);
+		k_msleep(1000);
+		printk("Waiting for photo to finish\n");
 	}
-	if (end_of_hour)
+	turn_leds_on_with_color(MAGENTA);
+
+	int err;
+	printk("Sending wind data\n");
+	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
+						msgbuf, strlen(msgbuf), topicbuf, 0);
+	printk("Wind data sent\n");
+	lull = 100;
+	gust = 0;
+	speed = 0;
+	sample_count = 0;
+
+	if (err)
+	{
+		LOG_WRN("Failed to send message, %d\n", err);
+		return;
+	}
+	watchdog_still_running();
+	
+	// update and report health data at the beginning of the hour
+	printk("publishing health data. minute = %d\n", minute);
+	if (minute < MINUTES_PER_REPORT)
 	{
 		k_msleep(1000);
 		turn_leds_on_with_color(RED);

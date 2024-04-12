@@ -144,7 +144,7 @@ int data_publish(enum mqtt_qos qos,
 	param.message_id = sys_rand32_get();
 	param.dup_flag = 0;
 	param.retain_flag = retain;
-	if (len > 2 & len < 100)
+	if (len > 2 && len < 100)
 	{
 		data_print("Pub: ", data, len);
 	}

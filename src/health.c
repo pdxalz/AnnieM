@@ -64,7 +64,7 @@ static void report_power(uint8_t *buf)
 	}
 	--buf; // remove the last comma
 	sprintf(buf, "]}");
-
+printk("power report: %s\n", buf);
 	n_pwr = (n_pwr - 1 + NUM_PWR) % NUM_PWR;
 }
 

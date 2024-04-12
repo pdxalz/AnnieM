@@ -5,7 +5,7 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(watchdog, LOG_LEVEL_INF);
 
-#define CONFIG_WATCHDOG_TIMEOUT_MSEC (5*60*1000)
+#define CONFIG_WATCHDOG_TIMEOUT_MSEC (20*60*1000)
 
 #define WDT_NODE DT_ALIAS(watchdog0)
 
