@@ -45,7 +45,8 @@
 			"string_view": "c",
 			"watchdog.h": "c",
 			"modem_info.h": "c",
-			"random": "c"
+			"random": "c",
+			"sensor.h": "c"
 		},
 		"nrf-connect.topdir": "${nrf-connect.sdk:2.2.0}",
 		"nrf-connect.toolchain.path": "${nrf-connect.toolchain:2.2.0}",

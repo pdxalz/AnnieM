@@ -89,3 +89,10 @@ my_spi_master: &spi3 {
 &wdt {
 	status = "okay";
 };
+
+&i2c2 {
+	bme680@76 {
+		compatible = "bosch,bme680";
+		reg = <0x76>;
+	};
+};

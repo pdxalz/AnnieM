@@ -27,7 +27,7 @@ LOG_MODULE_REGISTER(sensor, LOG_LEVEL_INF);
 static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, gpios);
 
 #define WIND_SCALE (102.0 / 60.0)
-#define MAX_DIRECTION_VOLTAGE 1630
+#define MAX_DIRECTION_VOLTAGE 1650
 #define NORTH_OFFSET 90 // Aim to the east so discontinuity is not at north
 
 static volatile int frequency = 0;
@@ -175,7 +175,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	int err;
 	printk("Sending wind data\n");
 	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
-						msgbuf, strlen(msgbuf), topicbuf, 0);
+					   msgbuf, strlen(msgbuf), topicbuf, 0);
 	printk("Wind data sent\n");
 	lull = 100;
 	gust = 0;
@@ -188,7 +188,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 		return;
 	}
 	watchdog_still_running();
-	
+
 	// update and report health data at the beginning of the hour
 	printk("publishing health data. minute = %d\n", minute);
 	if (minute < MINUTES_PER_REPORT)

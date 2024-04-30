@@ -1,4 +1,5 @@
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <date_time.h>
 #include <zephyr/net/mqtt.h>
@@ -15,9 +16,12 @@ LOG_MODULE_REGISTER(health, LOG_LEVEL_INF);
 
 int n_pwr = NUM_PWR - 1;
 uint16_t volts[NUM_PWR];
-uint16_t temperature[NUM_PWR];
+struct sensor_value temperature[NUM_PWR];
+struct sensor_value pressure[NUM_PWR];
+
 static uint16_t current_volts;
 
+const struct device *const dev = DEVICE_DT_GET_ONE(bosch_bme680);
 
 #define BATVOLT_R1 4.7f
 #define BATVOLT_R2 10.0f
@@ -33,49 +37,48 @@ static int get_battery_voltage()
 	return corrected;
 }
 
-static int get_annie_temperature()
+void convert_to_farhenheit(struct sensor_value *temp)
 {
-	const int T1 = 0;	 // low C temp
-	const int T2 = 50;	 // high C temp
-	const int V1 = 2100; // low voltage
-	const int V2 = 1558; // high voltage
-	int temperature;
-
-	uint16_t volts;
-
-	get_adc_voltage(ADC_TEMPERATURE_ID, &volts);
-
-	temperature = T1 + (volts - V1) * (T2 - T1) / (V2 - V1); // conversion
-	temperature = (temperature * 9.0 / 5.0) + 32;			 // F conversion
-	return temperature;
+	long tmp = (temp->val1 * 1000 + temp->val2 / 1000) * 9 / 5 + 32000;
+	temp->val1 = tmp / 1000;
+	temp->val2 = (tmp % 1000 + 50) / 100;
 }
 
 static void report_power(uint8_t *buf)
 {
+	struct sensor_value humidity, gas_res;
 	current_volts = get_battery_voltage();
 	volts[n_pwr] = current_volts;
 
-	temperature[n_pwr] = get_annie_temperature();
+	sensor_sample_fetch(dev);
+	sensor_channel_get(dev, SENSOR_CHAN_AMBIENT_TEMP, &temperature[n_pwr]);
+	convert_to_farhenheit(&temperature[n_pwr]);
+	sensor_channel_get(dev, SENSOR_CHAN_PRESS, &pressure[n_pwr]);
+	pressure[n_pwr].val2 = pressure[n_pwr].val2 / 10000;
+	sensor_channel_get(dev, SENSOR_CHAN_HUMIDITY, &humidity);
+	sensor_channel_get(dev, SENSOR_CHAN_GAS_RES, &gas_res);
+
 	buf += sprintf(buf, "{\"pwr\":[");
 
 	for (int i = n_pwr; i < NUM_PWR + n_pwr; ++i)
 	{
-		buf += sprintf(buf, "[%d, %d],", volts[i % NUM_PWR], temperature[i % NUM_PWR]);
+		buf += sprintf(buf, "[%d, %d.%d, %d.%02d],",
+					   volts[i % NUM_PWR],
+					   temperature[i % NUM_PWR].val1, temperature[i % NUM_PWR].val2,
+					   pressure[i % NUM_PWR].val1, pressure[i % NUM_PWR].val2);
 	}
 	--buf; // remove the last comma
 	sprintf(buf, "]}");
-printk("power report: %s\n", buf);
+	printk("power report: %s\n", buf);
 	n_pwr = (n_pwr - 1 + NUM_PWR) % NUM_PWR;
 }
-
-
 
 void publish_health_data()
 {
 	int err;
 
-	uint8_t * msgbuf = get_mqtt_message_buf();
-	uint8_t * topicbuf = get_mqtt_topic_buf();
+	uint8_t *msgbuf = get_mqtt_message_buf();
+	uint8_t *topicbuf = get_mqtt_topic_buf();
 
 	report_power(msgbuf);
 	sprintf(topicbuf, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
@@ -91,5 +94,27 @@ void publish_health_data()
 
 void init_health()
 {
+	struct sensor_value x;
 
+	// testing conversion
+	// x.val1 = 0;
+	// x.val2 = 0;
+	// convert_to_farhenheit(&x);
+	// printk("0C = %d.%dF\n", x.val1, x.val2);
+
+	// x.val1 = 27;
+	// x.val2 = 230111;
+	// convert_to_farhenheit(&x);
+	// printk("27.230111C = %d.%dF\n", x.val1, x.val2);
+
+	// x.val1 = 22;
+	// x.val2 = 980000;
+	// convert_to_farhenheit(&x);
+	// printk("22.980000C = %d.%dF\n", x.val1, x.val2);
+
+	if (!device_is_ready(dev))
+	{
+		printk("BME688 sensor: device not ready.\n");
+		return;
+	}
 }

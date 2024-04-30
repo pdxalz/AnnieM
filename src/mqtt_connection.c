@@ -32,7 +32,7 @@ LOG_MODULE_REGISTER(mqtt_con, LOG_LEVEL_INF);
 
 K_SEM_DEFINE(publish_sem, 1, 1);
 
-static uint8_t _mqtt_message_buf[200];
+static uint8_t _mqtt_message_buf[500];
 static uint8_t _mqtt_topic_buf[80];
 
 uint8_t *get_mqtt_message_buf()
