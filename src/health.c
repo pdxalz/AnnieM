@@ -18,6 +18,7 @@ int n_pwr = NUM_PWR - 1;
 uint16_t volts[NUM_PWR];
 struct sensor_value temperature[NUM_PWR];
 struct sensor_value pressure[NUM_PWR];
+struct sensor_value humidity[NUM_PWR];
 
 static uint16_t current_volts;
 
@@ -46,7 +47,7 @@ void convert_to_farhenheit(struct sensor_value *temp)
 
 static void report_power(uint8_t *buf)
 {
-	struct sensor_value humidity, gas_res;
+	struct sensor_value gas_res;
 	current_volts = get_battery_voltage();
 	volts[n_pwr] = current_volts;
 
@@ -55,17 +56,18 @@ static void report_power(uint8_t *buf)
 	convert_to_farhenheit(&temperature[n_pwr]);
 	sensor_channel_get(dev, SENSOR_CHAN_PRESS, &pressure[n_pwr]);
 	pressure[n_pwr].val2 = pressure[n_pwr].val2 / 10000;
-	sensor_channel_get(dev, SENSOR_CHAN_HUMIDITY, &humidity);
+	sensor_channel_get(dev, SENSOR_CHAN_HUMIDITY, &humidity[n_pwr]);
 	sensor_channel_get(dev, SENSOR_CHAN_GAS_RES, &gas_res);
 
 	buf += sprintf(buf, "{\"pwr\":[");
 
 	for (int i = n_pwr; i < NUM_PWR + n_pwr; ++i)
 	{
-		buf += sprintf(buf, "[%d, %d.%d, %d.%02d],",
+		buf += sprintf(buf, "[%d, %d.%d, %d.%02d, %d],",
 					   volts[i % NUM_PWR],
 					   temperature[i % NUM_PWR].val1, temperature[i % NUM_PWR].val2,
-					   pressure[i % NUM_PWR].val1, pressure[i % NUM_PWR].val2);
+					   pressure[i % NUM_PWR].val1, pressure[i % NUM_PWR].val2, 
+					   humidity[i % NUM_PWR].val1 );
 	}
 	--buf; // remove the last comma
 	sprintf(buf, "]}");
@@ -94,7 +96,7 @@ void publish_health_data()
 
 void init_health()
 {
-	struct sensor_value x;
+	// struct sensor_value x;
 
 	// testing conversion
 	// x.val1 = 0;

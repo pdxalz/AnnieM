@@ -441,6 +441,14 @@ void cameraCommand(char *cmd)
 
 	if ((strlen(cmd) >= 2) && (strchr(singlecharcmds, cmd[0])))
 	{
+		if (cmd[0] == 'z' && cmd[1] == '!')
+		{
+			// reset the system immediately
+			NVIC_SystemReset();
+			while (1)
+				;
+		}
+
 		camera_work.cmd = cmd[0];
 		camera_work.param = atoi(&cmd[1]);
 		err = k_work_submit_to_queue(&camera_work_q, &camera_work.work);
@@ -463,5 +471,5 @@ void cameraThreadInit()
 
 	k_work_init(&camera_work.work, camera_work_handler);
 	printk("camera init complete\n");
-
+	
 }
