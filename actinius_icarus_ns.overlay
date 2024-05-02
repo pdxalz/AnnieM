@@ -17,13 +17,6 @@
 			gpios = <&gpio0 16 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
 		};
 	};
-
-	vbatt {
-		compatible = "voltage-divider";
-		io-channels = <&adc 0>, <&adc 1>, <&adc 2>;
-		output-ohms = <10000000>;
-		full-ohms = <(10000000 + 4700000)>;
-	};
 	leds {
 		gpio_spi_cs: spi_cs {
 			gpios = <&gpio0 19 GPIO_ACTIVE_LOW>;

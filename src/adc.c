@@ -15,8 +15,7 @@ LOG_MODULE_REGISTER(adc, LOG_LEVEL_INF);
 #define ADC_REFERENCE ADC_REF_INTERNAL
 #define ADC_ACQUISITION_TIME ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 10)
 #define ADC_1ST_CHANNEL_INPUT SAADC_CH_PSELP_PSELP_AnalogInput0
-#define ADC_2ND_CHANNEL_INPUT SAADC_CH_PSELP_PSELP_AnalogInput1
-#define ADC_3RD_CHANNEL_INPUT SAADC_CH_PSELP_PSELP_AnalogInput2
+#define ADC_2ND_CHANNEL_INPUT SAADC_CH_PSELP_PSELP_AnalogInput2
 
 #define BUFFER_SIZE 1
 static int16_t m_sample_buffer[BUFFER_SIZE];
@@ -24,7 +23,7 @@ static int16_t m_sample_buffer[BUFFER_SIZE];
 static const struct device *adc_dev;
 
 // Battery voltage ADC
-static const struct adc_channel_cfg m_1st_channel_cfg = {
+static const struct adc_channel_cfg m_battery_channel_cfg = {
 	.gain = ADC_GAIN,
 	.reference = ADC_REFERENCE,
 	.acquisition_time = ADC_ACQUISITION_TIME,
@@ -33,21 +32,12 @@ static const struct adc_channel_cfg m_1st_channel_cfg = {
 };
 
 // Wind direction ADC
-static const struct adc_channel_cfg m_2nd_channel_cfg = {
+static const struct adc_channel_cfg m_windspeed_channel_cfg = {
 	.gain = ADC_GAIN,
 	.reference = ADC_REFERENCE,
 	.acquisition_time = ADC_ACQUISITION_TIME,
 	.channel_id = ADC_WIND_DIR_ID,
 	.input_positive = ADC_2ND_CHANNEL_INPUT,
-};
-
-// Temperature Sensor ADC
-static const struct adc_channel_cfg m_3rd_channel_cfg = {
-	.gain = ADC_GAIN,
-	.reference = ADC_REFERENCE,
-	.acquisition_time = ADC_ACQUISITION_TIME,
-	.channel_id = ADC_TEMPERATURE_ID,
-	.input_positive = ADC_3RD_CHANNEL_INPUT,
 };
 
 // Get battery voltage in millivolts, return 0 if successful
@@ -101,7 +91,7 @@ bool init_adc()
 		return false;
 	}
 
-	err = adc_channel_setup(adc_dev, &m_1st_channel_cfg);
+	err = adc_channel_setup(adc_dev, &m_battery_channel_cfg);
 	if (err)
 	{
 		LOG_WRN("Error in adc setup: %d\n", err);
@@ -109,15 +99,7 @@ bool init_adc()
 		return false;
 	}
 
-	err = adc_channel_setup(adc_dev, &m_2nd_channel_cfg);
-	if (err)
-	{
-		LOG_WRN("Error in adc setup: %d\n", err);
-
-		return false;
-	}
-
-	err = adc_channel_setup(adc_dev, &m_3rd_channel_cfg);
+	err = adc_channel_setup(adc_dev, &m_windspeed_channel_cfg);
 	if (err)
 	{
 		LOG_WRN("Error in adc setup: %d\n", err);
