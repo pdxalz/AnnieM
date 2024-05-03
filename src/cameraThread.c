@@ -132,7 +132,7 @@ int app_take_pict(uint8_t mode_index)
 {
 	uint8_t mode = image_modes[mode_index].mode;
 	int err;
-	int length = PIC_BUFFER_SIZE;
+	int length = PIC_SEND_LENGTH;
 
 	sending = true;
 	if (takePicture(&camera, mode, CAM_IMAGE_PIX_FMT_JPG) == CAM_ERR_TIMEOUT)
