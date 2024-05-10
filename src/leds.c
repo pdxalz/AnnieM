@@ -24,15 +24,34 @@ static struct gpio_dt_spec green_led = GPIO_DT_SPEC_GET(GREEN_LED_NODE, gpios);
 static struct gpio_dt_spec blue_led = GPIO_DT_SPEC_GET(BLUE_LED_NODE, gpios);
 
 static bool button_pressed = false;
+static enum led_mode led_mode = lmDelay;
 
 void button_pressed_callback(const struct device *gpiob, struct gpio_callback *cb, gpio_port_pins_t pins)
 {
     button_pressed = true;
 }
 
+void update_led_mode(void)
+{
+    if (led_mode == lmDelay)
+    {
+        led_mode = LmOff;
+    }
+}
+
+void set_led_mode(enum led_mode mode)
+{
+    if (led_mode > LmOn)
+    {
+        led_mode = LmOff;
+    }
+    led_mode = mode;
+}
+
 bool init_button(void)
 {
     int ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
+    led_mode = lmDelay;
     if (ret != 0)
     {
         LOG_WRN("Error %d: failed to configure %s pin %d\n",
@@ -86,6 +105,14 @@ void turn_leds_off(void)
 
 void turn_leds_on_with_color(led_color_t color)
 {
+    if (led_mode == LmOff)
+    {
+        gpio_pin_set_dt(&red_led, LED_OFF);
+        gpio_pin_set_dt(&green_led, LED_OFF);
+        gpio_pin_set_dt(&blue_led, LED_OFF);
+        return;
+    }
+
     switch (color)
     {
     case RED:

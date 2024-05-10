@@ -9,9 +9,12 @@
 #include "ArducamCamera.h"
 
 #include <modem/modem_info.h>
+#include "health.h"
+#include "leds.h"
 
 #define PIC_BUFFER_SIZE 1024 // CONFIG_MQTT_MESSAGE_BUFFER_SIZE
 #define PIC_SEND_LENGTH 256	 // z should be PIC_BUFFER_SIZE, but there's corruption
+// #define PIC_SEND_LENGTH 512	 // z should be PIC_BUFFER_SIZE, but there's corruption
 #define WORK_DELAY 400		 // image dim if quick startup
 #define PICT_DELAY 1
 #define START_DELAY 1
@@ -56,7 +59,7 @@ u saturation
 w white balance
 x white balance mode
 */
-const char *singlecharcmds = "mnopz";
+const char *singlecharcmds = "hlmnopz";
 // const char *singlecharcmds = "bcdefghijlmnopqrsuwx";
 
 struct image_mode_t
@@ -149,24 +152,36 @@ int app_take_pict(uint8_t mode_index)
 		printk("Length error\n");
 		return CAM_ERR_LENGTH;
 	}
-	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, "S", 1, "zimbuktu/jpgStart", 0);
+	sprintf(pic_buffer, "%d", camera.receivedLength);
+	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, pic_buffer, strlen(pic_buffer), "zimbuktu/jpgStart", 0);
 
 	k_msleep(START_DELAY);
 
 	while (camera.receivedLength > 0)
 	{
+		printk(".");
 		if (camera.receivedLength <= PIC_SEND_LENGTH)
 		{
+		printk("&");
+
 			length = camera.receivedLength;
 		}
+		printk("-");
+
 		readBuff(&camera, pic_buffer, length);
+		printk("+");
+
 		// for (int i = 0; i < length; ++i)
 		// {
 		// 	pic_buffer[i] = readByte(&camera);
 		// }
 		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, pic_buffer, length, "zimbuktu/jpgData", 0);
+		printk("!");
+		
 		k_msleep(DATA_DELAY);
 	}
+		printk("*");
+
 	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, "E", 1, "zimbuktu/jpgEnd", 0);
 	k_msleep(END_DELAY);
 
@@ -298,6 +313,16 @@ void camera_work_handler(struct k_work *work)
 {
 	struct work_info *pinfo = CONTAINER_OF(work, struct work_info, work);
 
+	if (pinfo->cmd == 'h')
+	{
+		report_status_info(pinfo->param);
+		return;
+	}
+	if (pinfo->cmd == 'l')
+	{
+		set_led_mode(pinfo->param);
+		return;
+	}
 	if (pinfo->cmd == 'z')
 	{
 		network_info_log(pinfo->param);

@@ -4,6 +4,7 @@
 
 
 void publish_health_data();
+void report_status_info(int item);
 
 void init_health();
 

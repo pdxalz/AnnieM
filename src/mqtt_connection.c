@@ -123,13 +123,13 @@ static void data_print(uint8_t *prefix, uint8_t *data, size_t len)
 int data_publish(enum mqtt_qos qos,
 				 uint8_t *data, size_t len, uint8_t *topic, uint8_t retain)
 {
-	printk("data_publish\n");
+//	printk("data_publish\n");
 	if (0 != k_sem_take(&publish_sem, K_MSEC(19000)))
 	{
 		printk("data_publish timeout\n");
 		return -1;
 	}
-	printk("data_publish taken\n");
+//	printk("data_publish taken\n");
 	if (len > CONFIG_MQTT_MESSAGE_BUFFER_SIZE)
 	{
 		LOG_ERR("_mqtt_message_buf overflow: %d\n", len);
@@ -144,11 +144,12 @@ int data_publish(enum mqtt_qos qos,
 	param.message_id = sys_rand32_get();
 	param.dup_flag = 0;
 	param.retain_flag = retain;
-	if (len > 2 && len < 100)
-	{
-		data_print("Pub: ", data, len);
-	}
-	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
+	// if (len > 2 && len < 100)
+	// {
+	// 	data_print("Pub: ", data, len);
+	// }
+//	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
+	printk(" P\n  ");
 	return mqtt_publish(&client, &param);
 }
 

@@ -12,7 +12,10 @@ typedef enum
     WHITE
 } led_color_t;
 
+enum led_mode { lmDelay, LmOff, LmOn};
 
+void update_led_mode(void);
+void set_led_mode(enum led_mode mode);
 void init_leds(void);
 void turn_leds_off(void);
 void turn_leds_on_with_color(led_color_t color);

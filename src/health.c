@@ -45,6 +45,7 @@ void convert_to_farhenheit(struct sensor_value *temp)
 	temp->val2 = (tmp % 1000 + 50) / 100;
 }
 
+
 static void report_power(uint8_t *buf)
 {
 	struct sensor_value gas_res;
@@ -63,11 +64,14 @@ static void report_power(uint8_t *buf)
 
 	for (int i = n_pwr; i < NUM_PWR + n_pwr; ++i)
 	{
-		buf += sprintf(buf, "[%d, %d.%d, %d.%02d, %d],",
+		buf += sprintf(buf, "[%d, %d.%d],",
 					   volts[i % NUM_PWR],
-					   temperature[i % NUM_PWR].val1, temperature[i % NUM_PWR].val2,
-					   pressure[i % NUM_PWR].val1, pressure[i % NUM_PWR].val2, 
-					   humidity[i % NUM_PWR].val1 );
+					   temperature[i % NUM_PWR].val1, temperature[i % NUM_PWR].val2);
+		// buf += sprintf(buf, "[%d, %d.%d, %d.%02d, %d],",
+		// 			   volts[i % NUM_PWR],
+		// 			   temperature[i % NUM_PWR].val1, temperature[i % NUM_PWR].val2,
+		// 			   pressure[i % NUM_PWR].val1, pressure[i % NUM_PWR].val2, 
+		// 			   humidity[i % NUM_PWR].val1 );
 	}
 	--buf; // remove the last comma
 	sprintf(buf, "]}");
@@ -85,14 +89,123 @@ void publish_health_data()
 	report_power(msgbuf);
 	sprintf(topicbuf, "%s/health", CONFIG_MQTT_PRIMARY_TOPIC);
 
-	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
-					   msgbuf, strlen(msgbuf), topicbuf, 1);
-	if (err)
+	time_t now;
+	now = time(NULL);
+	struct tm tm;
+	gmtime_r(&now, &tm);
+
+	if (tm.tm_hour == 20)
+	{  // send health data at 6 am or 8 pm
+		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE,
+						msgbuf, strlen(msgbuf), topicbuf, 1);
+		if (err)
+		{
+			LOG_WRN("Failed to send pwr message, %d\n", err);
+			return;
+		}
+		update_led_mode();  // turn off the led
+	}
+
+}
+
+static void publish_volts()
+{
+	uint8_t msgbuf[256];
+	uint8_t * buf;
+	char * topic = CONFIG_MQTT_PRIMARY_TOPIC"/volt";
+
+	buf = msgbuf;
+	buf += sprintf(buf, "{\"volt\":[");
+
+	for (int i = n_pwr+1; i < NUM_PWR + n_pwr+1; ++i)
 	{
-		LOG_WRN("Failed to send pwr message, %d\n", err);
-		return;
+		buf += sprintf(buf, "%d,", volts[i % NUM_PWR]);
+	}
+	--buf; // remove the last comma
+	sprintf(buf, "]}");
+
+	data_publish(MQTT_QOS_1_AT_LEAST_ONCE, msgbuf, strlen(msgbuf), topic, 0);
+}
+
+static void publish_temperature()
+{
+	uint8_t msgbuf[256];
+	uint8_t * buf;
+	char * topic = CONFIG_MQTT_PRIMARY_TOPIC"/temp";
+
+	buf = msgbuf;
+	buf += sprintf(buf, "{\"temp\":[");
+
+	for (int i = n_pwr+1; i < NUM_PWR + n_pwr+1; ++i)
+	{
+		buf += sprintf(buf, "%d.%d,", temperature[i % NUM_PWR].val1, temperature[i % NUM_PWR].val2);
+	}
+	--buf; // remove the last comma
+	sprintf(buf, "]}");
+
+	data_publish(MQTT_QOS_1_AT_LEAST_ONCE, msgbuf, strlen(msgbuf), topic, 0);
+}
+
+static void publish_pressure()
+{
+	uint8_t msgbuf[256];
+	uint8_t * buf;
+	char * topic = CONFIG_MQTT_PRIMARY_TOPIC"/pres";
+
+	buf = msgbuf;
+	buf += sprintf(buf, "{\"pres\":[");
+
+	for (int i = n_pwr+1; i < NUM_PWR + n_pwr+1; ++i)
+	{
+		buf += sprintf(buf, "%d.%02d,", pressure[i % NUM_PWR].val1, pressure[i % NUM_PWR].val2);
+	}
+	--buf; // remove the last comma
+	sprintf(buf, "]}");
+
+	data_publish(MQTT_QOS_1_AT_LEAST_ONCE, msgbuf, strlen(msgbuf), topic, 0);
+}
+
+static void publish_humidity()
+{
+	uint8_t msgbuf[256];
+	uint8_t * buf;
+	char * topic = CONFIG_MQTT_PRIMARY_TOPIC"/humd";
+
+	buf = msgbuf;
+	buf += sprintf(buf, "{\"humd\":[");
+
+	for (int i = n_pwr+1; i < NUM_PWR + n_pwr+1; ++i)
+	{
+		buf += sprintf(buf, "%d,", humidity[i % NUM_PWR].val1);
+	}
+	--buf; // remove the last comma
+	sprintf(buf, "]}");
+
+	data_publish(MQTT_QOS_1_AT_LEAST_ONCE, msgbuf, strlen(msgbuf), topic, 0);
+}
+
+
+void report_status_info(int item)
+{
+	switch (item)
+	{
+	case 0:
+		publish_volts();
+		break;
+	case 1:
+		publish_temperature();
+		break;
+	case 2:
+		publish_pressure();
+		break;
+	case 3:
+		publish_humidity();
+		break;
+	default:
+		break;
 	}
 }
+
 
 void init_health()
 {
