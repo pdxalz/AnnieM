@@ -15,7 +15,7 @@
 #define PIC_BUFFER_SIZE 1024 // CONFIG_MQTT_MESSAGE_BUFFER_SIZE
 #define PIC_SEND_LENGTH 256	 // z should be PIC_BUFFER_SIZE, but there's corruption
 // #define PIC_SEND_LENGTH 512	 // z should be PIC_BUFFER_SIZE, but there's corruption
-#define WORK_DELAY 400		 // image dim if quick startup
+#define WORK_DELAY 400 // image dim if quick startup
 #define PICT_DELAY 1
 #define START_DELAY 1
 #define DATA_DELAY 200 // image fails if too quick
@@ -59,7 +59,7 @@ u saturation
 w white balance
 x white balance mode
 */
-const char *singlecharcmds = "hlmnopz";
+const char *singlecharcmds = "efhlmnopqsz";
 // const char *singlecharcmds = "bcdefghijlmnopqrsuwx";
 
 struct image_mode_t
@@ -72,13 +72,13 @@ struct image_mode_t
 const struct image_mode_t image_modes[] = {
 	{CAM_IMAGE_MODE_96X96, 200, 8000},
 	{CAM_IMAGE_MODE_128X128, 200, 12000},
-	{CAM_IMAGE_MODE_QVGA, 1000, 30000},
-	{CAM_IMAGE_MODE_320X320, 1000, 35000},
-	{CAM_IMAGE_MODE_VGA, 1000, 100000},
-	{CAM_IMAGE_MODE_HD, 2000, 250000},
-	{CAM_IMAGE_MODE_UXGA, 200, 400000},
-	{CAM_IMAGE_MODE_FHD, 200, 500000},
-	{CAM_IMAGE_MODE_WQXGA2, 200, 800000}};
+	{CAM_IMAGE_MODE_QVGA, 1000, 45000},
+	{CAM_IMAGE_MODE_320X320, 1000, 55000},
+	{CAM_IMAGE_MODE_VGA, 1000, 150000},
+	{CAM_IMAGE_MODE_HD, 2000, 500000},
+	{CAM_IMAGE_MODE_UXGA, 200, 700000},
+	{CAM_IMAGE_MODE_FHD, 200, 800000},
+	{CAM_IMAGE_MODE_WQXGA2, 200, 1500000}};
 
 static uint8_t pic_buffer[PIC_BUFFER_SIZE];
 
@@ -130,7 +130,11 @@ bool sending_photo()
 {
 	return sending;
 }
-#if 1
+static uint8_t exposure = 0;
+static uint8_t sharpness = 0;
+static uint8_t focus = 0;
+static uint8_t quality = 0;
+
 int app_take_pict(uint8_t mode_index)
 {
 	uint8_t mode = image_modes[mode_index].mode;
@@ -138,15 +142,21 @@ int app_take_pict(uint8_t mode_index)
 	int length = PIC_SEND_LENGTH;
 
 	sending = true;
-	if (takePicture(&camera, mode, CAM_IMAGE_PIX_FMT_JPG) == CAM_ERR_TIMEOUT)
+	if (takePicture(&camera,
+					mode,
+					CAM_IMAGE_PIX_FMT_JPG,
+					exposure,
+					sharpness,
+					focus,
+					quality) == CAM_ERR_TIMEOUT)
 		return CAM_ERR_TIMEOUT;
 
 	k_msleep(PICT_DELAY);
-
+	printk("image size= %d\n", camera.receivedLength);
 	if (camera.receivedLength < image_modes[mode_index].min ||
 		camera.receivedLength > image_modes[mode_index].max)
 	{
-		sprintf(pic_buffer, "%d < %d %d", image_modes[mode_index].min, camera.receivedLength, image_modes[mode_index].min);
+		sprintf(pic_buffer, "%d < %d %d", image_modes[mode_index].min, camera.receivedLength, image_modes[mode_index].max);
 		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, pic_buffer, strlen(pic_buffer), "zimbuktu/jpgError", 0);
 		sending = false;
 		printk("Length error\n");
@@ -162,7 +172,7 @@ int app_take_pict(uint8_t mode_index)
 		printk(".");
 		if (camera.receivedLength <= PIC_SEND_LENGTH)
 		{
-		printk("&");
+			printk("&");
 
 			length = camera.receivedLength;
 		}
@@ -177,10 +187,10 @@ int app_take_pict(uint8_t mode_index)
 		// }
 		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, pic_buffer, length, "zimbuktu/jpgData", 0);
 		printk("!");
-		
+
 		k_msleep(DATA_DELAY);
 	}
-		printk("*");
+	printk("*");
 
 	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, "E", 1, "zimbuktu/jpgEnd", 0);
 	k_msleep(END_DELAY);
@@ -188,276 +198,53 @@ int app_take_pict(uint8_t mode_index)
 	sending = false;
 	return CAM_ERR_SUCCESS;
 }
-#endif
-
-#if 1
-void app_take_pict_fake_data(uint8_t mode_index)
-{
-	int err;
-	int length = PIC_BUFFER_SIZE;
-	int receivedLength = image_modes[mode_index].max / 2;
-	sending = true;
-
-	k_msleep(PICT_DELAY);
-
-	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, "S", 1, "zimbuktu/jpgStart", 0);
-
-	k_msleep(START_DELAY);
-
-	while (receivedLength > 0)
-	{
-		if (receivedLength <= PIC_BUFFER_SIZE)
-		{
-			length = receivedLength;
-		}
-		for (int i = 0; i < length; ++i)
-		{
-			pic_buffer[i] = i;
-		}
-		err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, pic_buffer, length, "zimbuktu/jpgData", 0);
-		receivedLength -= length;
-		k_msleep(DATA_DELAY);
-	}
-	err = data_publish(MQTT_QOS_1_AT_LEAST_ONCE, "E", 1, "zimbuktu/jpgEnd", 0);
-	k_msleep(END_DELAY);
-
-	sending = false;
-}
-#endif
-
-#if 1
-void app_take_pict_send_serial(uint8_t mode_index)
-{
-	uint8_t mode = image_modes[mode_index].mode;
-	sending = true;
-
-	takePicture(&camera, mode, CAM_IMAGE_PIX_FMT_JPG);
-	printk("START\n");
-	printk("length= %d\n", camera.totalLength);
-
-	if (camera.receivedLength < image_modes[mode_index].min ||
-		camera.receivedLength > image_modes[mode_index].max)
-	{
-		sprintf(pic_buffer, "%d < %d %d", image_modes[mode_index].min, camera.receivedLength, image_modes[mode_index].min);
-		printk("Length error\n");
-
-		sending = false;
-		return;
-	}
-
-	int count = 0;
-	while (camera.receivedLength > 0)
-	{
-		++count;
-		uint8_t ch = readByte(&camera);
-		printk("%02x", ch);
-		if (count >= 1024)
-		{
-			count = 0;
-			printk("\n");
-			k_msleep(DATA_DELAY);
-		}
-	}
-	printk("\nEND\n");
-	sending = false;
-}
-#endif
-
-#if 1
-// #define PBSIZE 40
-#define PBSIZE PIC_BUFFER_SIZE
-static char uartbuf[PBSIZE + 2];
-
-void app_take_pict_serial_buffer(uint8_t mode_index)
-{
-	uint8_t mode = image_modes[mode_index].mode;
-	sending = true;
-
-	takePicture(&camera, mode, CAM_IMAGE_PIX_FMT_JPG);
-	printk("START\n");
-	printk("length= %d\n", camera.totalLength);
-
-	if (camera.receivedLength < image_modes[mode_index].min ||
-		camera.receivedLength > image_modes[mode_index].max)
-	{
-		sprintf(pic_buffer, "%d < %d %d", image_modes[mode_index].min, camera.receivedLength, image_modes[mode_index].min);
-		printk("Length error\n");
-
-		sending = false;
-		return;
-	}
-
-	int len = 0;
-	while (camera.receivedLength > 0)
-	{
-		if (PBSIZE < camera.receivedLength)
-			len = (PBSIZE < camera.receivedLength) ? PBSIZE : camera.receivedLength;
-		if (len == 0)
-			break;
-		readBuff(&camera, pic_buffer, len);
-
-		char *p = uartbuf;
-		for (int i = 0; i < len; ++i)
-		{
-			p += snprintk(p, 3, "%02x", pic_buffer[i]);
-		}
-		printk("%s\n", uartbuf);
-		k_msleep(DATA_DELAY);
-	}
-	printk("\nEND\n");
-	sending = false;
-}
-#endif
 
 void camera_work_handler(struct k_work *work)
 {
 	struct work_info *pinfo = CONTAINER_OF(work, struct work_info, work);
 
-	if (pinfo->cmd == 'h')
+	switch (pinfo->cmd)
 	{
+	case 'e':
+		exposure = pinfo->param;
+		return;
+	case 's':
+		sharpness = pinfo->param;
+		return;
+	case 'f':
+		focus = pinfo->param;
+		return;
+	case 'q':
+		quality = pinfo->param;
+		return;
+
+	case 'h':
 		report_status_info(pinfo->param);
 		return;
-	}
-	if (pinfo->cmd == 'l')
-	{
+
+	case 'l':
 		set_led_mode(pinfo->param);
 		return;
-	}
-	if (pinfo->cmd == 'z')
+
+	case 'p':
 	{
+		int err = begin(&camera);
+		if (CAM_ERR_SUCCESS == err)
+		{
+			k_msleep(WORK_DELAY);
+			app_take_pict(pinfo->param % sizeof(image_modes));
+		}
+		else
+		{
+			printk("init failed\n");
+		}
+		cameraComplete(&camera);
+		return;
+	}
+	case 'z':
 		network_info_log(pinfo->param);
 		return;
 	}
-
-	printk("camera_work_handler start\n");
-
-	int err = begin(&camera);
-	printk("begin camera start %d\n", err);
-	if (CAM_ERR_SUCCESS == err)
-	{
-		printk("init ok\n");
-	}
-	else
-	{
-		cameraComplete(&camera);
-		printk("init failed\n");
-		return;
-	}
-	// printk("%s\n", camera.myCameraInfo.cameraId);
-	// printk("res %d id %d\n", camera.myCameraInfo.supportResolution, camera.cameraId);
-
-	printk("command: %c %d\n", pinfo->cmd, pinfo->param);
-	k_msleep(WORK_DELAY);
-
-	switch (pinfo->cmd)
-	{
-		// case 'b':
-		// 	setBrightness(&camera, pinfo->param);
-		// 	printk("setBrightness %d\n", pinfo->param);
-		// 	break;
-
-		// case 'c':
-		// 	setContrast(&camera, pinfo->param);
-		// 	printk("setContrast %d\n", pinfo->param);
-		// 	break;
-
-		// case 'd':
-		// 	setColorEffect(&camera, pinfo->param);
-		// 	printk("setColorEffect %d\n", pinfo->param);
-		// 	break;
-
-		// case 'e':
-		// 	setEV(&camera, pinfo->param);
-		// 	printk("setEV %d\n", pinfo->param);
-		// 	break;
-
-		// case 'f':
-		// 	setAutoFocus(&camera, pinfo->param);
-		// 	printk("setAutoFocus %d\n", pinfo->param);
-		// 	break;
-
-		// case 'g':
-		// 	setAutoExposure(&camera, pinfo->param);
-		// 	printk("setAutoExposure %d\n", pinfo->param);
-		// 	break;
-
-		// case 'h':
-		// 	setAbsoluteExposure(&camera, pinfo->param);
-		// 	printk("setAbsoluteExposure %d\n", pinfo->param);
-		// 	break;
-
-		// case 'i':
-		// 	setISOSensitivity(&camera, pinfo->param);
-		// 	printk("setISOSensitivity %d\n", pinfo->param);
-		// 	break;
-
-		// case 'j':
-		// 	setAutoISOSensitive(&camera, pinfo->param);
-		// 	printk("setAutoISOSensitive %d\n", pinfo->param);
-		// 	break;
-
-		// case 'l':
-		// 	if (pinfo->param)
-		// 	{
-		// 		lowPowerOn(&camera);
-		// 		printk("lowPowerOn\n");
-		// 	}
-		// 	else
-		// 	{
-		// 		lowPowerOff(&camera);
-		// 		printk("lowPowerOff\n");
-		// 	}
-		// 	break;
-
-	case 'm':
-		app_take_pict_send_serial(pinfo->param % sizeof(image_modes));
-		break;
-
-	case 'n':
-		app_take_pict_fake_data(pinfo->param % sizeof(image_modes));
-		break;
-
-	case 'o':
-		app_take_pict_serial_buffer(pinfo->param % sizeof(image_modes));
-		break;
-
-	case 'p':
-		app_take_pict(pinfo->param % sizeof(image_modes));
-		break;
-
-		// case 'q':
-		// 	setImageQuality(&camera, pinfo->param);
-		// 	printk("setImageQuality %d\n", pinfo->param);
-		// 	break;
-
-		// case 'r':
-		// 	reset(&camera);
-		// 	printk("reset\n");
-		// 	break;
-
-		// case 's':
-		// 	setSharpness(&camera, pinfo->param);
-		// 	printk("setSharpness %d\n", pinfo->param);
-		// 	break;
-
-		// case 'u':
-		// 	setSaturation(&camera, pinfo->param);
-		// 	printk("setSaturation %d\n", pinfo->param);
-		// 	break;
-
-		// case 'w':
-		// 	setAutoWhiteBalance(&camera, pinfo->param);
-		// 	printk("setAutoWhiteBalance %d\n", pinfo->param);
-		// 	break;
-
-		// case 'x':
-		// 	setAutoWhiteBalanceMode(&camera, pinfo->param);
-		// 	printk("setAutoWhiteBalanceMode %d\n", pinfo->param);
-		// 	break;
-
-	default:
-	}
-	cameraComplete(&camera);
 }
 
 void cameraCommand(char *cmd)
@@ -496,5 +283,4 @@ void cameraThreadInit()
 
 	k_work_init(&camera_work.work, camera_work_handler);
 	printk("camera init complete\n");
-	
 }

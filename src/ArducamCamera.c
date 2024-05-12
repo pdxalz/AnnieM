@@ -238,18 +238,24 @@ CamStatus cameraBegin(ArducamCamera *camera)
 
     // reset cpld and camera
     writeReg(camera, CAM_REG_SENSOR_RESET, CAM_SENSOR_RESET_ENABLE);
-    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT)
+        return CAM_ERR_TIMEOUT;
     cameraGetSensorConfig(camera);
     camera->verDateAndNumber[0] = readReg(camera, CAM_REG_YEAR_ID) & 0x3F; // year
-    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT)
+        return CAM_ERR_TIMEOUT;
     camera->verDateAndNumber[1] = readReg(camera, CAM_REG_MONTH_ID) & 0x0F; // month
-     if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT)
+        return CAM_ERR_TIMEOUT;
     camera->verDateAndNumber[2] = readReg(camera, CAM_REG_DAY_ID) & 0x1F; // day
-    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT)
+        return CAM_ERR_TIMEOUT;
     camera->verDateAndNumber[3] = readReg(camera, CAM_REG_FPGA_VERSION_NUMBER) & 0xFF; // day
-    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT)
+        return CAM_ERR_TIMEOUT;
 
-    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT)
+        return CAM_ERR_TIMEOUT;
     waitI2cIdle(camera);
     return CAM_ERR_SUCCESS;
 }
@@ -284,13 +290,27 @@ CamStatus cameraSetAutoFocus(ArducamCamera *camera, uint8_t val)
     return CAM_ERR_SUCCESS;
 }
 
-CamStatus cameraTakePicture(ArducamCamera *camera, CAM_IMAGE_MODE mode, CAM_IMAGE_PIX_FMT pixel_format)
+CamStatus cameraTakePicture(ArducamCamera *camera,
+                            CAM_IMAGE_MODE mode,
+                            CAM_IMAGE_PIX_FMT pixel_format,
+                            uint8_t exposure,
+                            uint8_t sharpness,
+                            uint8_t focus,
+                            uint8_t quality)
 {
     writeReg(camera, CAM_REG_FORMAT, pixel_format); // set the data format
-    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT)
+        return CAM_ERR_TIMEOUT;
 
     writeReg(camera, CAM_REG_CAPTURE_RESOLUTION, CAM_SET_CAPTURE_MODE | mode);
-    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT) return CAM_ERR_TIMEOUT;
+    if (waitI2cIdle(camera) == CAM_ERR_TIMEOUT)
+        return CAM_ERR_TIMEOUT;
+
+    setEV(camera, exposure);
+    setSharpness(camera, sharpness);
+    setAutoFocus(camera, focus);
+    setImageQuality(camera, quality);
+
 
     delayMs(100); // issue where mode change sometime misses
 
@@ -385,9 +405,10 @@ CamStatus cameraStopPreview(ArducamCamera *camera)
     return CAM_ERR_SUCCESS;
 }
 
-CamStatus cameraSetImageQuality(ArducamCamera *camera, IMAGE_QUALITY qualtiy)
+CamStatus cameraSetImageQuality(ArducamCamera *camera, IMAGE_QUALITY quality)
 {
-    writeReg(camera, CAM_REG_IMAGE_QUALITY, qualtiy);
+    printf("Setting image quality to %d\n", quality);
+    writeReg(camera, CAM_REG_IMAGE_QUALITY, quality);
     waitI2cIdle(camera); // Wait I2c Idle
     return CAM_ERR_SUCCESS;
 }
@@ -695,9 +716,21 @@ CamStatus begin(ArducamCamera *camera)
     return cameraBegin(camera);
 }
 
-CamStatus takePicture(ArducamCamera *camera, CAM_IMAGE_MODE mode, CAM_IMAGE_PIX_FMT pixel_format)
+CamStatus takePicture(ArducamCamera *camera,
+                      CAM_IMAGE_MODE mode,
+                      CAM_IMAGE_PIX_FMT pixel_format,
+                      uint8_t exposure,
+                      uint8_t sharpness,
+                      uint8_t focus,
+                      uint8_t quality)
 {
-    return cameraTakePicture(camera, mode, pixel_format);
+    return cameraTakePicture(camera,
+                             mode,
+                             pixel_format,
+                             exposure,
+                             sharpness,
+                             focus,
+                             quality);
 }
 
 CamStatus takeMultiPictures(ArducamCamera *camera, CAM_IMAGE_MODE mode, CAM_IMAGE_PIX_FMT pixel_format, uint8_t num)
