@@ -32,3 +32,4 @@ fp-info-cache
 *.csv
 gerbers
 cameraPhoto.jpg
+src/app/*.jpg

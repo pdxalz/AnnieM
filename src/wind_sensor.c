@@ -28,7 +28,8 @@ static const struct gpio_dt_spec windspeed = GPIO_DT_SPEC_GET(WIND_SPEED_NODE, g
 
 #define WIND_SCALE (102.0 / 60.0)
 #define MAX_DIRECTION_VOLTAGE 1650
-#define NORTH_OFFSET 90 // Aim to the east so discontinuity is not at north
+//#define NORTH_OFFSET 90 // Aim to the east so discontinuity is not at north
+#define NORTH_OFFSET 115 // Should capture the kite beach
 
 static volatile int frequency = 0;
 static volatile int64_t lasttime = 0;
@@ -103,14 +104,14 @@ static void wind_direction_timer_cb(struct k_timer *work)
 // A job is submitted to send the MQTT data
 static void wind_speed_sample_timer_cb(struct k_timer *work)
 {
-	float f = frequency / 6.0 * WIND_SCALE;
+	float f = frequency / 6.0 * WIND_SCALE + 0.5;
 	int current_speed = (int)f;
 	++sample_count;
 	speed += current_speed;
 	gust = (gust > current_speed) ? gust : current_speed;
 	lull = (lull < current_speed) ? lull : current_speed;
 
-	LOG_DBG("Windspeed %d ...\n", speed);
+	LOG_DBG("Windspeed a=%d  g=%d  l=%d\n", current_speed, gust, lull);
 	frequency = 0;
 
 	k_work_submit(&publish_reports_work);
@@ -138,7 +139,7 @@ static void publish_reports_work_cb(struct k_work *timer_id)
 	struct tm tm;
 	gmtime_r(&now, &tm);
 	int avg_speed;
-	printk("publish_reports_work_cb\n");
+	// printk("publish_reports_work_cb\n");
 	int minute = tm.tm_min;
 
 	// only report if it's the first sample period of the report period

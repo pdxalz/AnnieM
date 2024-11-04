@@ -10,6 +10,7 @@
 
 #include "ArducamCamera.h"
 #include "Platform.h"
+#include <stdio.h>
 
 /// @cond
 
@@ -912,9 +913,9 @@ void flushFifo(ArducamCamera *camera)
     cameraFlushFifo(camera);
 }
 
-CamStatus setImageQuality(ArducamCamera *camera, IMAGE_QUALITY qualtiy)
+CamStatus setImageQuality(ArducamCamera *camera, IMAGE_QUALITY quality)
 {
-    return cameraSetImageQuality(camera, qualtiy);
+    return cameraSetImageQuality(camera, quality);
 }
 
 ArducamCamera createArducamCamera(int CS)

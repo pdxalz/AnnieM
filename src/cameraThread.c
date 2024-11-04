@@ -132,8 +132,8 @@ bool sending_photo()
 }
 static uint8_t exposure = 0;
 static uint8_t sharpness = 0;
-static uint8_t focus = 0;
-static uint8_t quality = 0;
+static uint8_t focus = 4;
+static uint8_t quality = 1;
 
 int app_take_pict(uint8_t mode_index)
 {
@@ -153,6 +153,7 @@ int app_take_pict(uint8_t mode_index)
 
 	k_msleep(PICT_DELAY);
 	printk("image size= %d\n", camera.receivedLength);
+
 	if (camera.receivedLength < image_modes[mode_index].min ||
 		camera.receivedLength > image_modes[mode_index].max)
 	{
@@ -199,10 +200,64 @@ int app_take_pict(uint8_t mode_index)
 	return CAM_ERR_SUCCESS;
 }
 
+#define PBSIZE 256
+static char uartbuf[PBSIZE*2 + 20];
+int app_take_pict_serial_buffer(uint8_t mode_index)
+{
+	uint8_t mode = image_modes[mode_index].mode;
+	
+	printk("tpq=%d\n", quality);
+
+	sending = true;
+	if (takePicture(&camera,
+					mode,
+					CAM_IMAGE_PIX_FMT_JPG,
+					exposure,
+					sharpness,
+					focus,
+					quality) == CAM_ERR_TIMEOUT)
+		return CAM_ERR_TIMEOUT;
+
+	printk("START\n");
+	printk("length= %d\n", camera.totalLength);
+
+	if (camera.receivedLength < image_modes[mode_index].min ||
+		camera.receivedLength > image_modes[mode_index].max)
+	{
+		sprintf(pic_buffer, "%d < %d %d", image_modes[mode_index].min, camera.receivedLength, image_modes[mode_index].min);
+		printk("Length error\n");
+
+		sending = false;
+		return CAM_ERR_LENGTH;
+	}
+
+	int len = 0;
+	while (camera.receivedLength > 0)
+	{
+		if (PBSIZE < camera.receivedLength)
+			len = (PBSIZE < camera.receivedLength) ? PBSIZE : camera.receivedLength;
+		if (len == 0)
+			break;
+		readBuff(&camera, pic_buffer, len);
+
+		char *p = uartbuf;
+		for (int i = 0; i < len; ++i)
+		{
+			p += snprintk(p, 3, "%02x", pic_buffer[i]);
+		}
+		printk("%s\n", uartbuf);
+		k_msleep(DATA_DELAY);
+	}
+	printk("\nEND\n");
+	sending = false;
+
+	return CAM_ERR_SUCCESS;
+}
+
 void camera_work_handler(struct k_work *work)
 {
 	struct work_info *pinfo = CONTAINER_OF(work, struct work_info, work);
-
+	
 	switch (pinfo->cmd)
 	{
 	case 'e':
@@ -216,6 +271,8 @@ void camera_work_handler(struct k_work *work)
 		return;
 	case 'q':
 		quality = pinfo->param;
+		printk("set q=%d\n", quality);
+
 		return;
 
 	case 'h':
@@ -241,6 +298,22 @@ void camera_work_handler(struct k_work *work)
 		cameraComplete(&camera);
 		return;
 	}
+	case 'o':
+	{
+		int err = begin(&camera);
+		if (CAM_ERR_SUCCESS == err)
+		{
+			k_msleep(WORK_DELAY);
+			app_take_pict_serial_buffer(pinfo->param % sizeof(image_modes));
+		}
+		else
+		{
+			printk("init failed\n");
+		}
+		cameraComplete(&camera);
+		return;
+	}
+
 	case 'z':
 		network_info_log(pinfo->param);
 		return;
