@@ -45,7 +45,6 @@ uint8_t *get_mqtt_topic_buf()
 	return _mqtt_topic_buf;
 }
 
-
 /**@brief Function to get the payload of recived data.
  */
 static int get_received_payload(struct mqtt_client *c, size_t length)
@@ -123,13 +122,13 @@ static void data_print(uint8_t *prefix, uint8_t *data, size_t len)
 int data_publish(enum mqtt_qos qos,
 				 uint8_t *data, size_t len, uint8_t *topic, uint8_t retain)
 {
-//	printk("data_publish\n");
+	//	printk("data_publish\n");
 	if (0 != k_sem_take(&publish_sem, K_MSEC(19000)))
 	{
 		printk("data_publish timeout\n");
 		return -1;
 	}
-//	printk("data_publish taken\n");
+	//	printk("data_publish taken\n");
 	if (len > CONFIG_MQTT_MESSAGE_BUFFER_SIZE)
 	{
 		LOG_ERR("_mqtt_message_buf overflow: %d\n", len);
@@ -148,7 +147,7 @@ int data_publish(enum mqtt_qos qos,
 	// {
 	// 	data_print("Pub: ", data, len);
 	// }
-//	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
+	//	printk("to topic: %s len: %u\n", topic, (unsigned int)strlen(topic));
 	printk(" P\n  ");
 	return mqtt_publish(&client, &param);
 }
@@ -259,88 +258,28 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 static int broker_init(void)
 {
 	int err;
-	struct addrinfo *result;
-	struct addrinfo *addr;
-	struct addrinfo hints = {
-		.ai_family = AF_INET,
-		.ai_socktype = SOCK_STREAM};
+	struct sockaddr_in *broker4 = (struct sockaddr_in *)&broker;
 
-	err = getaddrinfo(CONFIG_MQTT_BROKER_HOSTNAME, NULL, &hints, &result);
-	if (err)
+	// Set the broker's IPv4 address and port
+	broker4->sin_family = AF_INET;
+	broker4->sin_port = htons(1883); // Default MQTT port
+	err = inet_pton(AF_INET, "107.174.172.150", &broker4->sin_addr.s_addr);
+	if (err <= 0)
 	{
-		LOG_WRN("getaddrinfo failed: %d\n", err);
+		LOG_WRN("Failed to set broker address: %d\n", err);
 		return -ECHILD;
 	}
 
-	addr = result;
-
-	/* Look for address of the broker. */
-	while (addr != NULL)
-	{
-		/* IPv4 Address. */
-		if (addr->ai_addrlen == sizeof(struct sockaddr_in))
-		{
-			struct sockaddr_in *broker4 =
-				((struct sockaddr_in *)&broker);
-			char ipv4_addr[NET_IPV4_ADDR_LEN];
-
-			broker4->sin_addr.s_addr =
-				((struct sockaddr_in *)addr->ai_addr)
-					->sin_addr.s_addr;
-			broker4->sin_family = AF_INET;
-			broker4->sin_port = htons(CONFIG_MQTT_BROKER_PORT);
-
-			inet_ntop(AF_INET, &broker4->sin_addr.s_addr,
-					  ipv4_addr, sizeof(ipv4_addr));
-			LOG_INF("IPv4 Address found %s\n", (char *)(ipv4_addr));
-
-			break;
-		}
-		else
-		{
-			LOG_WRN("ai_addrlen = %u should be %u or %u\n",
-					(unsigned int)addr->ai_addrlen,
-					(unsigned int)sizeof(struct sockaddr_in),
-					(unsigned int)sizeof(struct sockaddr_in6));
-		}
-
-		addr = addr->ai_next;
-	}
-
-	/* Free the address. */
-	freeaddrinfo(result);
-
-	return err;
+	LOG_INF("Broker initialized with IP: 107.174.172.150, Port: 1883\n");
+	return 0;
 }
 
 /* Function to get the client id */
 static const uint8_t *client_id_get(void)
 {
-	static uint8_t client_id[MAX(sizeof(CONFIG_MQTT_CLIENT_ID),
-								 CLIENT_ID_LEN)];
+	static uint8_t client_id[MAX(sizeof(CONFIG_MQTT_CLIENT_ID), CLIENT_ID_LEN)];
 
-	if (strlen(CONFIG_MQTT_CLIENT_ID) > 0)
-	{
-		snprintf(client_id, sizeof(client_id), "%s",
-				 CONFIG_MQTT_CLIENT_ID);
-		goto exit;
-	}
-
-	char imei_buf[CGSN_RESPONSE_LENGTH + 1];
-	int err;
-
-	err = nrf_modem_at_cmd(imei_buf, sizeof(imei_buf), "AT+CGSN");
-	if (err)
-	{
-		LOG_WRN("Failed to obtain IMEI, error: %d\n", err);
-		goto exit;
-	}
-
-	imei_buf[IMEI_LEN] = '\0';
-
-	snprintf(client_id, sizeof(client_id), "nrf-%.*s", IMEI_LEN, imei_buf);
-
-exit:
+	snprintf(client_id, sizeof(client_id), CONFIG_MQTT_CLIENT_ID);
 	LOG_DBG("client_id = %s", (char *)(client_id));
 
 	return client_id;
@@ -353,30 +292,46 @@ int client_init()
 {
 	int err;
 
-	/* initializes the client instance. */
+	/* Initialize the client instance */
 	mqtt_client_init(&client);
-	/* Resolves the configured hostname and initializes the MQTT broker structure */
+
+	/* Initialize the broker */
 	err = broker_init();
 	if (err)
 	{
 		LOG_WRN("Failed to initialize broker connection\n");
 		return err;
 	}
+
 	/* MQTT client configuration */
 	client.broker = &broker;
 	client.evt_cb = mqtt_evt_handler;
 	client.client_id.utf8 = client_id_get();
 	client.client_id.size = strlen(client.client_id.utf8);
-	client.password = NULL;
-	client.user_name = NULL;
+
+	// Set username and password
+	static struct mqtt_utf8 username = {
+		.utf8 = "wind_sensor",
+		.size = 11};
+	static struct mqtt_utf8 password = {
+		.utf8 = "SauvieWing6.4",
+		.size = 13};
+
+	client.user_name = &username;
+	client.password = &password;
+
 	client.protocol_version = MQTT_VERSION_3_1_1;
+
 	/* MQTT buffers configuration */
 	client.rx_buf = rx_buffer;
 	client.rx_buf_size = sizeof(rx_buffer);
 	client.tx_buf = tx_buffer;
 	client.tx_buf_size = sizeof(tx_buffer);
-	/* We are not using TLS in Exercise 1 */
+
+	/* Non-secure transport */
 	client.transport.type = MQTT_TRANSPORT_NON_SECURE;
+
+	LOG_INF("MQTT client initialized with username: wind_sensor\n");
 	return err;
 }
 
